@@ -101,3 +101,7 @@ FROM python:3.14-slim
 - **Testing**: pytest with asyncio and coverage support
 - **Pre-commit Hooks**: Automated code quality checks
 - **Conventional Commits**: Standardized commit messages
+
+## Document
+
+Documentation other than Steering should be written in Japanese.
