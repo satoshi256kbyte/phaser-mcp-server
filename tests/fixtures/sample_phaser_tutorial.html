@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creating Your First Phaser Game - Phaser Documentation</title>
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navigation">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/tutorials">Tutorials</a></li>
+            <li><a href="/api">API</a></li>
+        </ul>
+    </nav>
+    
+    <aside class="sidebar">
+        <h3>Table of Contents</h3>
+        <ul>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#setup">Setup</a></li>
+            <li><a href="#sprites">Working with Sprites</a></li>
+        </ul>
+    </aside>
+
+    <main class="documentation-content">
+        <h1>Creating Your First Phaser Game</h1>
+        
+        <section id="introduction">
+            <h2>Introduction</h2>
+            <p>Welcome to Phaser! This tutorial will guide you through creating your first game using the Phaser framework.</p>
+            <p>Phaser is a fast, robust and versatile game framework for making HTML5 games for desktop and mobile web browsers.</p>
+        </section>
+
+        <section id="setup">
+            <h2>Setting Up Your Game</h2>
+            <p>First, let's create the basic game configuration:</p>
+            
+            <pre><code class="language-javascript">
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+const game = new Phaser.Game(config);
+            </code></pre>
+
+            <div class="note">
+                <strong>Note:</strong> The <code>Phaser.AUTO</code> type will automatically choose WebGL if available, falling back to Canvas.
+            </div>
+        </section>
+
+        <section id="sprites">
+            <h2>Working with Sprites</h2>
+            <p>Sprites are the fundamental building blocks of any Phaser game. Here's how to create and manipulate them:</p>
+
+            <h3>Loading Assets</h3>
+            <p>Before you can create sprites, you need to load the assets in the preload function:</p>
+
+            <pre><code class="language-javascript">
+function preload() {
+    this.load.setBaseURL('https://labs.phaser.io');
+    this.load.image('sky', 'assets/skies/space3.png');
+    this.load.image('logo', 'assets/sprites/phaser3-logo.png');
+    this.load.image('red', 'assets/particles/red.png');
+}
+            </code></pre>
+
+            <h3>Creating Sprites</h3>
+            <p>Once assets are loaded, you can create sprites in the create function:</p>
+
+            <pre><code class="language-javascript">
+function create() {
+    // Add a background
+    this.add.image(400, 300, 'sky');
+    
+    // Create a sprite
+    const logo = this.add.sprite(400, 150, 'logo');
+    
+    // Make it interactive
+    logo.setInteractive();
+    logo.on('pointerdown', function() {
+        logo.setTint(Math.random() * 0xffffff);
+    });
+    
+    // Add physics to the sprite
+    this.physics.add.sprite(400, 100, 'logo');
+}
+            </code></pre>
+
+            <h3>Sprite Properties</h3>
+            <p>Sprites have many useful properties you can modify:</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>x</td>
+                        <td>number</td>
+                        <td>The x coordinate of the sprite</td>
+                    </tr>
+                    <tr>
+                        <td>y</td>
+                        <td>number</td>
+                        <td>The y coordinate of the sprite</td>
+                    </tr>
+                    <tr>
+                        <td>scale</td>
+                        <td>number</td>
+                        <td>The scale factor of the sprite</td>
+                    </tr>
+                    <tr>
+                        <td>rotation</td>
+                        <td>number</td>
+                        <td>The rotation of the sprite in radians</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Animation Example</h3>
+            <p>Here's how to create a simple animation:</p>
+
+            <pre><code class="language-javascript">
+// Create animation
+this.anims.create({
+    key: 'spin',
+    frames: this.anims.generateFrameNumbers('logo', { start: 0, end: 3 }),
+    frameRate: 10,
+    repeat: -1
+});
+
+// Play animation
+logo.play('spin');
+            </code></pre>
+
+            <ul>
+                <li>Use <code>this.add.sprite()</code> to create static sprites</li>
+                <li>Use <code>this.physics.add.sprite()</code> for physics-enabled sprites</li>
+                <li>Set <code>setInteractive()</code> to make sprites clickable</li>
+                <li>Use <code>setTint()</code> to change sprite color</li>
+            </ul>
+        </section>
+
+        <section id="physics">
+            <h2>Physics System</h2>
+            <p>Phaser includes a powerful physics system. Here are some common physics operations:</p>
+
+            <pre><code class="language-javascript">
+function create() {
+    const player = this.physics.add.sprite(100, 450, 'player');
+    
+    // Set physics properties
+    player.setBounce(0.2);
+    player.setCollideWorldBounds(true);
+    player.setVelocity(100, 200);
+    
+    // Create platforms
+    const platforms = this.physics.add.staticGroup();
+    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+    
+    // Add collision
+    this.physics.add.collider(player, platforms);
+}
+            </code></pre>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Phaser Documentation. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://twitter.com/phaser_">Twitter</a>
+            <a href="https://github.com/photonstorm/phaser">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        // This script should be removed during parsing
+        console.log('This is a script that should be removed');
+    </script>
+</body>
+</html>

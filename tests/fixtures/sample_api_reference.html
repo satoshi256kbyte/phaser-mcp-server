@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phaser.GameObjects.Sprite - API Reference</title>
+    <link rel="stylesheet" href="/css/api.css">
+</head>
+<body>
+    <nav class="navigation">
+        <div class="breadcrumb">
+            <a href="/api">API</a> > 
+            <a href="/api/gameobjects">GameObjects</a> > 
+            <span>Sprite</span>
+        </div>
+    </nav>
+
+    <main class="api-content">
+        <header class="api-header">
+            <h1 class="class-name">Phaser.GameObjects.Sprite</h1>
+            <div class="class-inheritance">
+                <span>Extends:</span> 
+                <a href="/api/gameobjects/gameobject">Phaser.GameObjects.GameObject</a>
+            </div>
+        </header>
+
+        <section class="description">
+            <h2>Description</h2>
+            <p>A Sprite Game Object is used to display a texture on screen. Sprites can have input events and physics bodies. They can also be tweened, tinted, and have custom blend modes.</p>
+            <p>The main difference between a Sprite and an Image Game Object is that you cannot animate Images. As such, Sprites take a fraction more memory and processing time than Images.</p>
+        </section>
+
+        <section class="constructor">
+            <h2>Constructor</h2>
+            <div class="method-signature">
+                <code>new Sprite(scene, x, y, texture, frame)</code>
+            </div>
+            <h3>Parameters</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>scene</td>
+                        <td>Phaser.Scene</td>
+                        <td>The Scene to which this Game Object belongs.</td>
+                    </tr>
+                    <tr>
+                        <td>x</td>
+                        <td>number</td>
+                        <td>The horizontal position of this Game Object in the world.</td>
+                    </tr>
+                    <tr>
+                        <td>y</td>
+                        <td>number</td>
+                        <td>The vertical position of this Game Object in the world.</td>
+                    </tr>
+                    <tr>
+                        <td>texture</td>
+                        <td>string</td>
+                        <td>The key of the Texture this Game Object will use to render with.</td>
+                    </tr>
+                    <tr>
+                        <td>frame</td>
+                        <td>string | number</td>
+                        <td>An optional frame from the Texture this Game Object is rendering with.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="methods">
+            <h2>Methods</h2>
+            
+            <div class="method">
+                <h3 class="method-name">setTexture</h3>
+                <div class="method-signature">
+                    <code>setTexture(key, frame) → {Phaser.GameObjects.Sprite}</code>
+                </div>
+                <p>Sets the texture and frame this Game Object will use to render with.</p>
+                <h4>Parameters</h4>
+                <ul>
+                    <li><strong>key</strong> (string) - The key of the texture to be used.</li>
+                    <li><strong>frame</strong> (string | number) - The name or index of the frame within the Texture.</li>
+                </ul>
+                <h4>Returns</h4>
+                <p>This Game Object instance.</p>
+            </div>
+
+            <div class="method">
+                <h3 class="method-name">setPosition</h3>
+                <div class="method-signature">
+                    <code>setPosition(x, y, z, w) → {Phaser.GameObjects.Sprite}</code>
+                </div>
+                <p>Sets the position of this Game Object.</p>
+                <h4>Parameters</h4>
+                <ul>
+                    <li><strong>x</strong> (number) - The x position of this Game Object.</li>
+                    <li><strong>y</strong> (number) - The y position of this Game Object.</li>
+                    <li><strong>z</strong> (number) - The z position of this Game Object.</li>
+                    <li><strong>w</strong> (number) - The w position of this Game Object.</li>
+                </ul>
+            </div>
+
+            <div class="method">
+                <h3 class="method-name">play</h3>
+                <div class="method-signature">
+                    <code>play(key, ignoreIfPlaying) → {Phaser.GameObjects.Sprite}</code>
+                </div>
+                <p>Plays an Animation.</p>
+                <h4>Parameters</h4>
+                <ul>
+                    <li><strong>key</strong> (string) - The string-based key of the animation to play.</li>
+                    <li><strong>ignoreIfPlaying</strong> (boolean) - If an animation is already playing then ignore this call.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="properties">
+            <h2>Properties</h2>
+            
+            <div class="property">
+                <h3 class="property-name">x</h3>
+                <div class="property-type">number</div>
+                <p>The x position of this Game Object.</p>
+            </div>
+
+            <div class="property">
+                <h3 class="property-name">y</h3>
+                <div class="property-type">number</div>
+                <p>The y position of this Game Object.</p>
+            </div>
+
+            <div class="property">
+                <h3 class="property-name">texture</h3>
+                <div class="property-type">Phaser.Textures.Texture</div>
+                <p>The Texture this Game Object is using to render with.</p>
+            </div>
+
+            <div class="property">
+                <h3 class="property-name">frame</h3>
+                <div class="property-type">Phaser.Textures.Frame</div>
+                <p>The Texture Frame this Game Object is using to render with.</p>
+            </div>
+        </section>
+
+        <section class="examples">
+            <h2>Examples</h2>
+            
+            <div class="example">
+                <h3>Basic Sprite Creation</h3>
+                <pre><code class="language-javascript">
+// Create a sprite at position (100, 100) using the 'player' texture
+const sprite = this.add.sprite(100, 100, 'player');
+
+// Set the scale
+sprite.setScale(2);
+
+// Set the origin to center
+sprite.setOrigin(0.5, 0.5);
+                </code></pre>
+            </div>
+
+            <div class="example">
+                <h3>Animated Sprite</h3>
+                <pre><code class="language-javascript">
+// Create an animated sprite
+const animatedSprite = this.add.sprite(200, 200, 'character');
+
+// Create animation
+this.anims.create({
+    key: 'walk',
+    frames: this.anims.generateFrameNumbers('character', { start: 0, end: 3 }),
+    frameRate: 10,
+    repeat: -1
+});
+
+// Play the animation
+animatedSprite.play('walk');
+                </code></pre>
+            </div>
+
+            <div class="example">
+                <h3>Interactive Sprite</h3>
+                <pre><code class="language-javascript">
+// Create an interactive sprite
+const button = this.add.sprite(300, 300, 'button');
+button.setInteractive();
+
+// Add click handler
+button.on('pointerdown', function() {
+    this.setTint(0xff0000);
+});
+
+// Add hover effects
+button.on('pointerover', function() {
+    this.setScale(1.1);
+});
+
+button.on('pointerout', function() {
+    this.setScale(1.0);
+    this.clearTint();
+});
+                </code></pre>
+            </div>
+        </section>
+
+        <section class="related">
+            <h2>See Also</h2>
+            <ul>
+                <li><a href="/api/gameobjects/image">Phaser.GameObjects.Image</a></li>
+                <li><a href="/api/gameobjects/gameobject">Phaser.GameObjects.GameObject</a></li>
+                <li><a href="/api/animations/animationmanager">Phaser.Animations.AnimationManager</a></li>
+                <li><a href="/api/textures/texture">Phaser.Textures.Texture</a></li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>API Documentation for Phaser 3.70.0</p>
+    </footer>
+</body>
+</html>
