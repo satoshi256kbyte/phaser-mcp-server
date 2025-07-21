@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "awslabs.core-mcp-server": {
+      "command": "docker",
+      "args": ["run", "--rm", "--interactive", "--env", "FASTMCP_LOG_LEVEL=ERROR", "awslabs/core-mcp-server:latest"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "awslabs.aws-documentation-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "--interactive",
+        "--env",
+        "FASTMCP_LOG_LEVEL=ERROR",
+        "--env",
+        "AWS_DOCUMENTATION_PARTITION=aws",
+        "mcp/aws-documentation:latest"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "awslabs.cdk-mcp-server": {
+      "command": "docker",
+      "args": ["run", "--rm", "--interactive", "--env", "FASTMCP_LOG_LEVEL=ERROR", "awslabs/cdk-mcp-server:latest"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
