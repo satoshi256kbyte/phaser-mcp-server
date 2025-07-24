@@ -786,13 +786,13 @@ class PhaserDocsClient:
         Raises:
             NetworkError: If search fails due to network issues
         """
-        from typing import TypedDict, List, Optional
+        from typing import TypedDict
 
         class PageInfo(TypedDict):
             url: str
             title: str
             priority: float
-            keywords: List[str]
+            keywords: list[str]
 
         # Define known Phaser documentation pages to search
         # These are representative URLs - in a real implementation,

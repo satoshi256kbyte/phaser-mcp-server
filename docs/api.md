@@ -1,6 +1,7 @@
 # API リファレンス
 
-Phaser MCP Serverが提供するMCPツールの詳細なAPIリファレンスです。このドキュメントでは、各ツールの機能、パラメータ、戻り値、使用例、およびベストプラクティスについて説明します。
+Phaser MCP
+Serverが提供するMCPツールの詳細なAPIリファレンスです。このドキュメントでは、各ツールの機能、パラメータ、戻り値、使用例、およびベストプラクティスについて説明します。
 
 ## 概要
 
@@ -29,11 +30,11 @@ async def read_documentation(
 
 ### パラメータ
 
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `url` | `string` | ✓ | - | 取得するPhaserドキュメントのURL。相対パス（例：`/phaser/getting-started`）または絶対URL（例：`https://docs.phaser.io/phaser/getting-started`）を指定できます。 |
-| `max_length` | `integer` | - | `5000` | 返すコンテンツの最大文字数。大きなドキュメントを分割して取得する場合に便利です。 |
-| `start_index` | `integer` | - | `0` | ページネーション用の開始インデックス。`max_length`と組み合わせて大きなドキュメントを分割して取得できます。 |
+| パラメータ    | 型        | 必須 | デフォルト | 説明                                                                                                                                                           |
+| ------------- | --------- | ---- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`         | `string`  | ✓    | -          | 取得するPhaserドキュメントのURL。相対パス（例：`/phaser/getting-started`）または絶対URL（例：`https://docs.phaser.io/phaser/getting-started`）を指定できます。 |
+| `max_length`  | `integer` | -    | `5000`     | 返すコンテンツの最大文字数。大きなドキュメントを分割して取得する場合に便利です。                                                                               |
+| `start_index` | `integer` | -    | `0`        | ページネーション用の開始インデックス。`max_length`と組み合わせて大きなドキュメントを分割して取得できます。                                                     |
 
 ### 戻り値
 
@@ -42,7 +43,7 @@ async def read_documentation(
 Markdown形式に変換されたドキュメントコンテンツを返します。変換されたMarkdownには以下の特徴があります：
 
 - 見出し構造が保持されます（`#`、`##`、`###`など）
-- コードブロックは言語指定付きで保持されます（```javascript など）
+- コードブロックは言語指定付きで保持されます（\`\`\`javascript など）
 - 画像参照は絶対URLに変換されます
 - リンクは絶対URLに変換されます
 - テーブルやリストなどの書式も保持されます
@@ -99,22 +100,24 @@ Markdown形式に変換されたドキュメントコンテンツを返します
 
 ### エラー
 
-| エラータイプ | 条件 | メッセージ例 |
-|-------------|------|-------------|
-| `ValueError` | `max_length` が0以下 | "max_length must be positive" |
-| `ValueError` | `start_index` が負の値 | "start_index must be non-negative" |
-| `RuntimeError` | 無効なURL | "Failed to read documentation: Invalid URL" |
+| エラータイプ   | 条件                     | メッセージ例                                                 |
+| -------------- | ------------------------ | ------------------------------------------------------------ |
+| `ValueError`   | `max_length` が0以下     | "max_length must be positive"                                |
+| `ValueError`   | `start_index` が負の値   | "start_index must be non-negative"                           |
+| `RuntimeError` | 無効なURL                | "Failed to read documentation: Invalid URL"                  |
 | `RuntimeError` | 許可されていないドメイン | "Failed to read documentation: URL not from allowed domains" |
-| `RuntimeError` | ネットワークエラー | "Failed to read documentation: Connection timeout" |
-| `RuntimeError` | ページが見つからない | "Failed to read documentation: Page not found (404)" |
+| `RuntimeError` | ネットワークエラー       | "Failed to read documentation: Connection timeout"           |
+| `RuntimeError` | ページが見つからない     | "Failed to read documentation: Page not found (404)"         |
 
 ### ベストプラクティス
 
 1. **大きなページの処理**: 長いドキュメントページでは`max_length`を適切に設定し、メモリ使用量を制御してください。一般的に2000〜5000文字が適切です。
-2. **ページネーション**: 大きなコンテンツは`start_index`を使って分割して取得してください。各部分を順番に処理することで、全体を効率的に取得できます。
-3. **URL検証**: Phaserの公式ドメイン（docs.phaser.io）のURLのみ使用してください。他のドメインへのアクセスは拒否されます。
-4. **相対パスの使用**: 完全なURLを指定する代わりに、相対パス（例：`/phaser/getting-started`）を使用できます。これはベースURL（`https://docs.phaser.io`）に自動的に追加されます。
-5. **エラー処理**: ネットワークエラーや無効なURLに対して適切なエラー処理を実装してください。サーバーは自動的にリトライを行いますが、クライアント側でもエラーハンドリングを実装することをお勧めします。
+1. **ページネーション**: 大きなコンテンツは`start_index`を使って分割して取得してください。各部分を順番に処理することで、全体を効率的に取得できます。
+1. **URL検証**: Phaserの公式ドメイン（docs.phaser.io）のURLのみ使用してください。他のドメインへのアクセスは拒否されます。
+1. **相対パスの使用**:
+   完全なURLを指定する代わりに、相対パス（例：`/phaser/getting-started`）を使用できます。これはベースURL（`https://docs.phaser.io`）に自動的に追加されます。
+1. **エラー処理**:
+   ネットワークエラーや無効なURLに対して適切なエラー処理を実装してください。サーバーは自動的にリトライを行いますが、クライアント側でもエラーハンドリングを実装することをお勧めします。
 
 ## search_documentation
 
@@ -132,10 +135,10 @@ async def search_documentation(
 
 ### パラメータ
 
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `query` | `string` | ✓ | - | 検索クエリ文字列。スペースで区切られた複数のキーワードを指定できます。英語のキーワードを使用することを強く推奨します。 |
-| `limit` | `integer` | - | `10` | 返す結果の最大数。1〜100の範囲で指定できます。 |
+| パラメータ | 型        | 必須 | デフォルト | 説明                                                                                                                   |
+| ---------- | --------- | ---- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `query`    | `string`  | ✓    | -          | 検索クエリ文字列。スペースで区切られた複数のキーワードを指定できます。英語のキーワードを使用することを強く推奨します。 |
+| `limit`    | `integer` | -    | `10`       | 返す結果の最大数。1〜100の範囲で指定できます。                                                                         |
 
 ### 戻り値
 
@@ -155,13 +158,13 @@ async def search_documentation(
 
 #### 結果オブジェクトのフィールド
 
-| フィールド | 型 | 説明 |
-|-----------|---|------|
-| `rank_order` | `integer` | 検索結果の順位（1から開始）。関連性の高い順にソートされます。 |
-| `url` | `string` | ドキュメントページのURL。このURLは`read_documentation`ツールに直接渡すことができます。 |
-| `title` | `string` | ページのタイトル。検索結果を識別するのに役立ちます。 |
-| `snippet` | `string` \| `null` | コンテンツの抜粋。検索クエリに関連する部分が含まれます。利用できない場合は`null`になります。 |
-| `relevance_score` | `float` \| `null` | 関連度スコア（0.0〜1.0）。値が大きいほど関連性が高いことを示します。利用できない場合は`null`になります。 |
+| フィールド        | 型                 | 説明                                                                                                     |
+| ----------------- | ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `rank_order`      | `integer`          | 検索結果の順位（1から開始）。関連性の高い順にソートされます。                                            |
+| `url`             | `string`           | ドキュメントページのURL。このURLは`read_documentation`ツールに直接渡すことができます。                   |
+| `title`           | `string`           | ページのタイトル。検索結果を識別するのに役立ちます。                                                     |
+| `snippet`         | `string` \| `null` | コンテンツの抜粋。検索クエリに関連する部分が含まれます。利用できない場合は`null`になります。             |
+| `relevance_score` | `float` \| `null`  | 関連度スコア（0.0〜1.0）。値が大きいほど関連性が高いことを示します。利用できない場合は`null`になります。 |
 
 ### 使用例
 
@@ -212,22 +215,23 @@ async def search_documentation(
 
 ### エラー
 
-| エラータイプ | 条件 | メッセージ例 |
-|-------------|------|-------------|
-| `ValueError` | 空のクエリ | "Search query cannot be empty" |
-| `ValueError` | `limit` が0以下 | "limit must be positive" |
-| `ValueError` | `limit` が100を超える | "limit cannot exceed 100" |
-| `RuntimeError` | 検索エラー | "Failed to search documentation: Search service unavailable" |
-| `RuntimeError` | ネットワークエラー | "Failed to search documentation: Connection timeout" |
+| エラータイプ   | 条件                  | メッセージ例                                                 |
+| -------------- | --------------------- | ------------------------------------------------------------ |
+| `ValueError`   | 空のクエリ            | "Search query cannot be empty"                               |
+| `ValueError`   | `limit` が0以下       | "limit must be positive"                                     |
+| `ValueError`   | `limit` が100を超える | "limit cannot exceed 100"                                    |
+| `RuntimeError` | 検索エラー            | "Failed to search documentation: Search service unavailable" |
+| `RuntimeError` | ネットワークエラー    | "Failed to search documentation: Connection timeout"         |
 
 ### ベストプラクティス
 
-1. **具体的なクエリ**: より具体的な検索語を使用すると、関連性の高い結果が得られます。例えば、「game」よりも「sprite animation」のような具体的なクエリの方が良い結果を得られます。
-2. **複数キーワード**: スペース区切りで複数のキーワードを指定できます。これにより、検索範囲を絞り込むことができます。
-3. **英語のキーワード**: 検索は英語のキーワードで最も効果的です。日本語などの他の言語では結果が限られる場合があります。
-4. **結果の制限**: 必要な結果数に応じて`limit`を調整してください。デフォルトの10が多くの場合に適切ですが、より広範囲の結果が必要な場合は増やすことができます。
-5. **検索結果の活用**: 検索結果から得られたURLを`read_documentation`ツールに渡して、詳細な情報を取得できます。
-6. **検索戦略**: 最初に広い検索語で始め、結果が多すぎる場合は具体的なキーワードを追加して絞り込むことをお勧めします。
+1. **具体的なクエリ**: より具体的な検索語を使用すると、関連性の高い結果が得られます。例えば、「game」よりも「sprite
+   animation」のような具体的なクエリの方が良い結果を得られます。
+1. **複数キーワード**: スペース区切りで複数のキーワードを指定できます。これにより、検索範囲を絞り込むことができます。
+1. **英語のキーワード**: 検索は英語のキーワードで最も効果的です。日本語などの他の言語では結果が限られる場合があります。
+1. **結果の制限**: 必要な結果数に応じて`limit`を調整してください。デフォルトの10が多くの場合に適切ですが、より広範囲の結果が必要な場合は増やすことができます。
+1. **検索結果の活用**: 検索結果から得られたURLを`read_documentation`ツールに渡して、詳細な情報を取得できます。
+1. **検索戦略**: 最初に広い検索語で始め、結果が多すぎる場合は具体的なキーワードを追加して絞り込むことをお勧めします。
 
 ## get_api_reference
 
@@ -244,9 +248,9 @@ async def get_api_reference(
 
 ### パラメータ
 
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `class_name` | `string` | ✓ | - | 取得するPhaserクラス名。名前空間を含む完全なクラス名（例：`Phaser.GameObjects.Sprite`）を指定することを強く推奨します。 |
+| パラメータ   | 型       | 必須 | デフォルト | 説明                                                                                                                    |
+| ------------ | -------- | ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `class_name` | `string` | ✓    | -          | 取得するPhaserクラス名。名前空間を含む完全なクラス名（例：`Phaser.GameObjects.Sprite`）を指定することを強く推奨します。 |
 
 ### 戻り値
 
@@ -263,7 +267,7 @@ Markdown形式でフォーマットされたAPIリファレンス情報を返し
 
 返されるMarkdownは構造化されており、見出しレベルで情報が整理されています：
 
-```markdown
+````markdown
 # Phaser.GameObjects.Sprite
 
 A Sprite Game Object is used for the display of both static and animated images in your game.
@@ -272,19 +276,21 @@ A Sprite Game Object is used for the display of both static and animated images 
 
 ```javascript
 new Phaser.GameObjects.Sprite(scene, x, y, texture, frame)
-```
+````
 
 ### Parameters
 
 - `scene` (Phaser.Scene) - The Scene to which this Sprite belongs
 - `x` (number) - The horizontal position of this Game Object in the world
 - `y` (number) - The vertical position of this Game Object in the world
-- `texture` (string | Phaser.Textures.Texture) - The key, or instance of the Texture this Game Object will use
+- `texture` (string | Phaser.Textures.Texture) - The key, or instance of the Texture
+  this Game Object will use
 - `frame` (string | number) - The initial frame to display
 
 ## Methods
 
-- `setTexture(key, frame)` - Sets the texture and frame this Sprite will use for rendering
+- `setTexture(key, frame)` - Sets the texture and frame this Sprite will use for
+  rendering
 - `play(key, ignoreIfPlaying)` - Starts playing the given animation
 - `setPosition(x, y)` - Sets the position of this Game Object
 
@@ -302,7 +308,7 @@ sprite.setScale(2);
 sprite.play('walk');
 ```
 
-```
+````
 
 ### 使用例
 
@@ -315,7 +321,7 @@ sprite.play('walk');
     "class_name": "Phaser.Scene"
   }
 }
-```
+````
 
 #### Spriteクラスの情報取得
 
@@ -352,29 +358,36 @@ sprite.play('walk');
 
 ### エラー
 
-| エラータイプ | 条件 | メッセージ例 |
-|-------------|------|-------------|
-| `ValueError` | 空のクラス名 | "class_name cannot be empty" |
-| `RuntimeError` | クラスが見つからない | "Failed to get API reference: Class not found" |
-| `RuntimeError` | APIアクセスエラー | "Failed to get API reference: API service unavailable" |
-| `RuntimeError` | ネットワークエラー | "Failed to get API reference: Connection timeout" |
+| エラータイプ   | 条件                 | メッセージ例                                           |
+| -------------- | -------------------- | ------------------------------------------------------ |
+| `ValueError`   | 空のクラス名         | "class_name cannot be empty"                           |
+| `RuntimeError` | クラスが見つからない | "Failed to get API reference: Class not found"         |
+| `RuntimeError` | APIアクセスエラー    | "Failed to get API reference: API service unavailable" |
+| `RuntimeError` | ネットワークエラー   | "Failed to get API reference: Connection timeout"      |
 
 ### ベストプラクティス
 
-1. **完全なクラス名**: 名前空間を含む完全なクラス名を使用してください（例: `Phaser.GameObjects.Sprite`）。単に`Sprite`だけでは、正確なクラスを特定できない場合があります。
-2. **大文字小文字**: クラス名の大文字小文字は正確に指定してください。Phaserは大文字小文字を区別します（例：`Phaser.Game`は正しいが、`phaser.game`は間違い）。
-3. **階層の理解**: Phaserのクラス階層を理解することで、必要なクラスを正確に指定できます。例えば、`Sprite`は`Phaser.GameObjects`名前空間に属しています。
-4. **関連クラスの探索**: あるクラスのAPIリファレンスを取得した後、関連するクラスやコンポーネントのAPIも確認すると、より包括的な理解が得られます。
-5. **検索との組み合わせ**: クラス名が不明な場合は、まず`search_documentation`ツールを使用して関連するクラスを検索し、その後`get_api_reference`で詳細情報を取得するという流れが効果的です。
+1. **完全なクラス名**: 名前空間を含む完全なクラス名を使用してください（例:
+   `Phaser.GameObjects.Sprite`）。単に`Sprite`だけでは、正確なクラスを特定できない場合があります。
+1. **大文字小文字**:
+   クラス名の大文字小文字は正確に指定してください。Phaserは大文字小文字を区別します（例：`Phaser.Game`は正しいが、`phaser.game`は間違い）。
+1. **階層の理解**:
+   Phaserのクラス階層を理解することで、必要なクラスを正確に指定できます。例えば、`Sprite`は`Phaser.GameObjects`名前空間に属しています。
+1. **関連クラスの探索**: あるクラスのAPIリファレンスを取得した後、関連するクラスやコンポーネントのAPIも確認すると、より包括的な理解が得られます。
+1. **検索との組み合わせ**:
+   クラス名が不明な場合は、まず`search_documentation`ツールを使用して関連するクラスを検索し、その後`get_api_reference`で詳細情報を取得するという流れが効果的です。
 
 ### 一般的なPhaserクラス
 
 以下は、よく使用されるPhaserクラスの一覧です：
 
 - **コア**: `Phaser.Game`, `Phaser.Scene`, `Phaser.GameObjects.GameObject`
-- **表示オブジェクト**: `Phaser.GameObjects.Sprite`, `Phaser.GameObjects.Image`, `Phaser.GameObjects.Text`
-- **物理エンジン**: `Phaser.Physics.Arcade.ArcadePhysics`, `Phaser.Physics.Arcade.Body`, `Phaser.Physics.Matter.MatterPhysics`
-- **入力**: `Phaser.Input.InputPlugin`, `Phaser.Input.Keyboard.KeyboardPlugin`, `Phaser.Input.Pointer`
+- **表示オブジェクト**: `Phaser.GameObjects.Sprite`, `Phaser.GameObjects.Image`,
+  `Phaser.GameObjects.Text`
+- **物理エンジン**: `Phaser.Physics.Arcade.ArcadePhysics`, `Phaser.Physics.Arcade.Body`,
+  `Phaser.Physics.Matter.MatterPhysics`
+- **入力**: `Phaser.Input.InputPlugin`, `Phaser.Input.Keyboard.KeyboardPlugin`,
+  `Phaser.Input.Pointer`
 - **アニメーション**: `Phaser.Animations.AnimationManager`, `Phaser.Tweens.TweenManager`
 - **カメラ**: `Phaser.Cameras.Scene2D.Camera`, `Phaser.Cameras.Scene2D.CameraManager`
 - **サウンド**: `Phaser.Sound.SoundManager`, `Phaser.Sound.WebAudioSound`
@@ -424,15 +437,18 @@ Failed to [operation]: [specific error message]
 各ツールの一般的なレスポンス時間は以下の通りです：
 
 - **read_documentation**:
+
   - 通常のリクエスト: 1-3秒
   - 大きなドキュメント: 3-10秒
-  - キャッシュされたコンテンツ: <1秒（将来の機能）
+  - キャッシュされたコンテンツ: \<1秒（将来の機能）
 
 - **search_documentation**:
+
   - 基本的な検索: 2-5秒
   - 複雑な検索クエリ: 5-8秒
 
 - **get_api_reference**:
+
   - 一般的なクラス: 1-3秒
   - 複雑なクラス階層: 3-7秒
 
@@ -445,16 +461,17 @@ Failed to [operation]: [specific error message]
 ### 最適化のヒント
 
 1. **適切なページサイズ**: `max_length`を適切に設定してメモリ使用量を制御
-2. **効率的な検索**: 具体的な検索クエリを使用して関連性の高い結果を取得
-3. **バッチ処理**: 複数のAPIリファレンスが必要な場合は、個別にリクエスト
-4. **結果のキャッシュ**: クライアント側で結果をキャッシュすることで、同じリクエストの繰り返しを避ける
-5. **エラー時のバックオフ**: エラーが発生した場合は、一定時間待機してから再試行
+1. **効率的な検索**: 具体的な検索クエリを使用して関連性の高い結果を取得
+1. **バッチ処理**: 複数のAPIリファレンスが必要な場合は、個別にリクエスト
+1. **結果のキャッシュ**: クライアント側で結果をキャッシュすることで、同じリクエストの繰り返しを避ける
+1. **エラー時のバックオフ**: エラーが発生した場合は、一定時間待機してから再試行
 
 ## 統合例
 
 ### Claude Desktop での使用
 
-Claude Desktopの設定ファイル（`.kiro/settings/mcp.json`または`~/.kiro/settings/mcp.json`）に以下の設定を追加します：
+Claude
+Desktopの設定ファイル（`.kiro/settings/mcp.json`または`~/.kiro/settings/mcp.json`）に以下の設定を追加します：
 
 ```json
 {
@@ -669,12 +686,12 @@ phaser-mcp-server --health-check
 
 Docker環境では、以下の環境変数を使用してサーバーの動作をカスタマイズできます：
 
-| 環境変数 | デフォルト値 | 説明 |
-|---------|-------------|------|
-| `FASTMCP_LOG_LEVEL` | `ERROR` | ログレベル（TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL） |
-| `PHASER_DOCS_TIMEOUT` | `30` | HTTPリクエストのタイムアウト（秒） |
-| `PHASER_DOCS_MAX_RETRIES` | `3` | 最大リトライ回数 |
-| `PHASER_DOCS_CACHE_TTL` | `3600` | キャッシュTTL（秒、将来の機能用） |
+| 環境変数                  | デフォルト値 | 説明                                                       |
+| ------------------------- | ------------ | ---------------------------------------------------------- |
+| `FASTMCP_LOG_LEVEL`       | `ERROR`      | ログレベル（TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL） |
+| `PHASER_DOCS_TIMEOUT`     | `30`         | HTTPリクエストのタイムアウト（秒）                         |
+| `PHASER_DOCS_MAX_RETRIES` | `3`          | 最大リトライ回数                                           |
+| `PHASER_DOCS_CACHE_TTL`   | `3600`       | キャッシュTTL（秒、将来の機能用）                          |
 
 ### Docker実行例
 

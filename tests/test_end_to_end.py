@@ -443,9 +443,9 @@ sprite{i}.setScale(2);
             assert len(result) <= 5000
 
             # Performance assertions
-            assert (
-                processing_time < 5.0
-            ), f"Processing took too long: {processing_time:.2f}s"
+            assert processing_time < 5.0, (
+                f"Processing took too long: {processing_time:.2f}s"
+            )
 
             print(f"✓ Large document processed in {processing_time:.2f}s")
 
@@ -609,9 +609,9 @@ sprite{i}.setScale(2);
             memory_increase = final_memory - initial_memory
 
             # Memory usage should not increase excessively
-            assert (
-                memory_increase < 100
-            ), f"Memory usage increased too much: {memory_increase:.2f}MB"
+            assert memory_increase < 100, (
+                f"Memory usage increased too much: {memory_increase:.2f}MB"
+            )
 
             print(f"✓ Memory usage increase: {memory_increase:.2f}MB")
 
@@ -675,9 +675,9 @@ sprite{i}.setScale(2);
             assert "## Properties" in result
 
             # Performance assertion
-            assert (
-                processing_time < 2.0
-            ), f"API reference processing too slow: {processing_time:.2f}s"
+            assert processing_time < 2.0, (
+                f"API reference processing too slow: {processing_time:.2f}s"
+            )
 
             print(f"✓ API reference processed in {processing_time:.2f}s")
 

@@ -206,11 +206,11 @@ Claude Desktop の設定ファイルに以下を追加：
 
 ### Claude Desktop
 
-| OS | 設定ファイルの場所 |
-|----|------------------|
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
+| OS      | 設定ファイルの場所                                                |
+| ------- | ----------------------------------------------------------------- |
+| macOS   | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json`                     |
+| Linux   | `~/.config/Claude/claude_desktop_config.json`                     |
 
 ## 環境変数設定
 
@@ -358,11 +358,11 @@ less debug.log
 問題が解決しない場合は、以下の情報を含めてIssueを作成してください：
 
 1. OS とバージョン
-2. Python バージョン
-3. インストール方法
-4. エラーメッセージの全文
-5. 実行したコマンド
-6. 環境変数の設定
+1. Python バージョン
+1. インストール方法
+1. エラーメッセージの全文
+1. 実行したコマンド
+1. 環境変数の設定
 
 ## アップデート
 

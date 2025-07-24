@@ -18,7 +18,9 @@ class TestModelValidation:
         # Test DocumentationPage with invalid types
         with pytest.raises(ValidationError):
             DocumentationPage(
-                url=123, title="Test", content="Test content"  # Not a string
+                url=123,
+                title="Test",
+                content="Test content",  # Not a string
             )
 
         with pytest.raises(ValidationError):

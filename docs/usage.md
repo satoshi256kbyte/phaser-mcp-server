@@ -38,7 +38,7 @@ Claude Desktop や他のMCPクライアントから以下のツールを使用�
 
 **結果例:**
 
-```markdown
+````markdown
 # Getting Started with Phaser
 
 Phaser is a fun, free and fast 2D game framework for making HTML5 games...
@@ -49,7 +49,7 @@ You can install Phaser via npm:
 
 ```bash
 npm install phaser
-```
+````
 
 ## Your First Game
 
@@ -69,7 +69,7 @@ const config = {
 const game = new Phaser.Game(config);
 ```
 
-```
+````
 
 #### 長いドキュメントのページネーション
 
@@ -82,7 +82,7 @@ const game = new Phaser.Game(config);
     "start_index": 0
   }
 }
-```
+````
 
 続きを読む場合：
 
@@ -170,7 +170,7 @@ const game = new Phaser.Game(config);
 
 **結果例:**
 
-```markdown
+````markdown
 # Phaser.Scene
 
 A Scene is a self-contained game world that can contain its own game objects, cameras, physics systems, and more.
@@ -179,11 +179,12 @@ A Scene is a self-contained game world that can contain its own game objects, ca
 
 ```javascript
 new Phaser.Scene(config)
-```
+````
 
 ### Parameters
 
-- `config` (string | Phaser.Types.Scenes.SettingsConfig) - The scene key or configuration object.
+- `config` (string | Phaser.Types.Scenes.SettingsConfig) - The scene key or
+  configuration object.
 
 ## Methods
 
@@ -193,7 +194,8 @@ new Phaser.Scene(config)
 add: Phaser.GameObjects.GameObjectFactory
 ```
 
-A reference to the GameObject Factory which can be used to add new objects to this Scene.
+A reference to the GameObject Factory which can be used to add new objects to this
+Scene.
 
 ### physics
 
@@ -220,7 +222,7 @@ class GameScene extends Phaser.Scene {
 }
 ```
 
-```
+````
 
 #### 特定のゲームオブジェクトの情報取得
 
@@ -231,7 +233,7 @@ class GameScene extends Phaser.Scene {
     "class_name": "Phaser.GameObjects.Sprite"
   }
 }
-```
+````
 
 ## 実践的な使用例
 
@@ -609,6 +611,8 @@ phaser-mcp-server --health-check
 
 使用方法について質問がある場合は、以下のリソースを活用してください：
 
-- [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues) - バグ報告や機能要望
-- [GitHub Discussions](https://github.com/phaser-mcp-server/phaser-mcp-server/discussions) - 使用方法の質問や議論
+- [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues) -
+  バグ報告や機能要望
+- [GitHub Discussions](https://github.com/phaser-mcp-server/phaser-mcp-server/discussions)
+  \- 使用方法の質問や議論
 - [Phaser コミュニティ](https://phaser.io/community) - Phaser 全般の質問

@@ -1,6 +1,7 @@
 # Docker 設定
 
-Phaser MCP Serverは、Dockerコンテナとして実行することができます。このドキュメントでは、Dockerを使用してサーバーをビルド、実行、管理する方法について説明します。
+Phaser MCP
+Serverは、Dockerコンテナとして実行することができます。このドキュメントでは、Dockerを使用してサーバーをビルド、実行、管理する方法について説明します。
 
 ## 前提条件
 
@@ -40,11 +41,11 @@ docker-compose up -d
 
 Dockerコンテナは以下の環境変数をサポートしています：
 
-| 環境変数 | 説明 | デフォルト値 |
-|----------|------|------------|
-| `FASTMCP_LOG_LEVEL` | ログレベル（DEBUG, INFO, WARNING, ERROR, CRITICAL） | ERROR |
-| `PHASER_DOCS_TIMEOUT` | HTTPリクエストのタイムアウト（秒） | 30 |
-| `PHASER_DOCS_MAX_RETRIES` | 失敗したリクエストの最大再試行回数 | 3 |
+| 環境変数                  | 説明                                                | デフォルト値 |
+| ------------------------- | --------------------------------------------------- | ------------ |
+| `FASTMCP_LOG_LEVEL`       | ログレベル（DEBUG, INFO, WARNING, ERROR, CRITICAL） | ERROR        |
+| `PHASER_DOCS_TIMEOUT`     | HTTPリクエストのタイムアウト（秒）                  | 30           |
+| `PHASER_DOCS_MAX_RETRIES` | 失敗したリクエストの最大再試行回数                  | 3            |
 
 ## ヘルスチェック
 
@@ -102,5 +103,5 @@ docker exec -it phaser-mcp-server /bin/bash
 ヘルスチェックが失敗する場合は、以下を確認してください：
 
 1. サーバープロセスが実行されているか
-2. 必要なポートが公開されているか
-3. 環境変数が正しく設定されているか
+1. 必要なポートが公開されているか
+1. 環境変数が正しく設定されているか
