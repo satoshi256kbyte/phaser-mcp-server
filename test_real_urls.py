@@ -2,6 +2,7 @@
 """Test script to check real Phaser documentation URLs."""
 
 import asyncio
+
 import httpx
 
 
@@ -14,7 +15,7 @@ async def test_urls():
         "https://phaser.io/tutorials/",
         "https://phaser.io/examples/",
     ]
-    
+
     async with httpx.AsyncClient() as client:
         for url in urls_to_test:
             try:

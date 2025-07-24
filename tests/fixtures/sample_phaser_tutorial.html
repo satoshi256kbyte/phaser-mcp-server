@@ -14,7 +14,7 @@
             <li><a href="/api">API</a></li>
         </ul>
     </nav>
-    
+
     <aside class="sidebar">
         <h3>Table of Contents</h3>
         <ul>
@@ -26,7 +26,7 @@
 
     <main class="documentation-content">
         <h1>Creating Your First Phaser Game</h1>
-        
+
         <section id="introduction">
             <h2>Introduction</h2>
             <p>Welcome to Phaser! This tutorial will guide you through creating your first game using the Phaser framework.</p>
@@ -36,7 +36,7 @@
         <section id="setup">
             <h2>Setting Up Your Game</h2>
             <p>First, let's create the basic game configuration:</p>
-            
+
             <pre><code class="language-javascript">
 const config = {
     type: Phaser.AUTO,
@@ -87,16 +87,16 @@ function preload() {
 function create() {
     // Add a background
     this.add.image(400, 300, 'sky');
-    
+
     // Create a sprite
     const logo = this.add.sprite(400, 150, 'logo');
-    
+
     // Make it interactive
     logo.setInteractive();
     logo.on('pointerdown', function() {
         logo.setTint(Math.random() * 0xffffff);
     });
-    
+
     // Add physics to the sprite
     this.physics.add.sprite(400, 100, 'logo');
 }
@@ -104,7 +104,7 @@ function create() {
 
             <h3>Sprite Properties</h3>
             <p>Sprites have many useful properties you can modify:</p>
-            
+
             <table>
                 <thead>
                     <tr>
@@ -168,16 +168,16 @@ logo.play('spin');
             <pre><code class="language-javascript">
 function create() {
     const player = this.physics.add.sprite(100, 450, 'player');
-    
+
     // Set physics properties
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
     player.setVelocity(100, 200);
-    
+
     // Create platforms
     const platforms = this.physics.add.staticGroup();
     platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-    
+
     // Add collision
     this.physics.add.collider(player, platforms);
 }

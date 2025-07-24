@@ -38,36 +38,27 @@ class DocumentationPage(BaseModel):
         ...,
         description="Full URL of the documentation page",
         min_length=1,
-        max_length=2048
+        max_length=2048,
     )
 
     title: str = Field(
-        ...,
-        description="Page title extracted from HTML",
-        min_length=1,
-        max_length=500
+        ..., description="Page title extracted from HTML", min_length=1, max_length=500
     )
 
     content: str = Field(
-        ...,
-        description="Page content converted to Markdown format",
-        min_length=1
+        ..., description="Page content converted to Markdown format", min_length=1
     )
 
     last_modified: datetime | None = Field(
-        default=None,
-        description="Timestamp of last modification"
+        default=None, description="Timestamp of last modification"
     )
 
     content_type: str = Field(
-        default="text/html",
-        description="MIME type of the original content"
+        default="text/html", description="MIME type of the original content"
     )
 
     word_count: int = Field(
-        default=0,
-        description="Number of words in the content",
-        ge=0
+        default=0, description="Number of words in the content", ge=0
     )
 
     @field_validator("url")
@@ -97,11 +88,7 @@ class DocumentationPage(BaseModel):
             raise ValueError("URL must use http or https scheme")
 
         # Check for allowed Phaser domains
-        allowed_domains = [
-            "docs.phaser.io",
-            "phaser.io",
-            "www.phaser.io"
-        ]
+        allowed_domains = ["docs.phaser.io", "phaser.io", "www.phaser.io"]
 
         if parsed.netloc not in allowed_domains:
             msg = f"URL must be from allowed domains: {allowed_domains}"
@@ -130,12 +117,12 @@ class DocumentationPage(BaseModel):
         suffixes_to_remove = [
             " - Phaser",
             " | Phaser Documentation",
-            " :: Phaser Documentation"
+            " :: Phaser Documentation",
         ]
 
         for suffix in suffixes_to_remove:
             if cleaned.endswith(suffix):
-                cleaned = cleaned[:-len(suffix)].strip()
+                cleaned = cleaned[: -len(suffix)].strip()
 
         return cleaned
 
@@ -173,36 +160,25 @@ class SearchResult(BaseModel):
     """
 
     rank_order: int = Field(
-        ...,
-        description="Ranking position of this result (1-based)",
-        ge=1
+        ..., description="Ranking position of this result (1-based)", ge=1
     )
 
     url: str = Field(
-        ...,
-        description="URL of the found page",
-        min_length=1,
-        max_length=2048
+        ..., description="URL of the found page", min_length=1, max_length=2048
     )
 
     title: str = Field(
-        ...,
-        description="Title of the found page",
-        min_length=1,
-        max_length=500
+        ..., description="Title of the found page", min_length=1, max_length=500
     )
 
     snippet: str | None = Field(
         default=None,
         description="Content snippet showing search context",
-        max_length=1000
+        max_length=1000,
     )
 
     relevance_score: float | None = Field(
-        default=None,
-        description="Relevance score between 0.0 and 1.0",
-        ge=0.0,
-        le=1.0
+        default=None, description="Relevance score between 0.0 and 1.0", ge=0.0, le=1.0
     )
 
     @field_validator("url")
@@ -284,47 +260,36 @@ class ApiReference(BaseModel):
         ...,
         description="Name of the API class or namespace",
         min_length=1,
-        max_length=200
+        max_length=200,
     )
 
     url: str = Field(
-        ...,
-        description="URL of the API reference page",
-        min_length=1,
-        max_length=2048
+        ..., description="URL of the API reference page", min_length=1, max_length=2048
     )
 
     description: str = Field(
-        ...,
-        description="Description of the class or API",
-        min_length=1
+        ..., description="Description of the class or API", min_length=1
     )
 
     methods: list[str] = Field(
-        default_factory=list,
-        description="List of method names available in this class"
+        default_factory=list, description="List of method names available in this class"
     )
 
     properties: list[str] = Field(
         default_factory=list,
-        description="List of property names available in this class"
+        description="List of property names available in this class",
     )
 
     examples: list[str] = Field(
-        default_factory=list,
-        description="List of code examples demonstrating usage"
+        default_factory=list, description="List of code examples demonstrating usage"
     )
 
     parent_class: str | None = Field(
-        default=None,
-        description="Parent class name for inheritance",
-        max_length=200
+        default=None, description="Parent class name for inheritance", max_length=200
     )
 
     namespace: str | None = Field(
-        default=None,
-        description="Namespace this class belongs to",
-        max_length=200
+        default=None, description="Namespace this class belongs to", max_length=200
     )
 
     @field_validator("class_name")
@@ -400,12 +365,12 @@ class ApiReference(BaseModel):
         # Clean and validate each item
         cleaned_items = []
         for item in v:
-            if isinstance(item, str) and item.strip():
+            if item and item.strip():
                 cleaned_items.append(item.strip())
 
         # Remove duplicates while preserving order
-        seen = set()
-        result = []
+        seen: set[str] = set()
+        result: list[str] = []
         for item in cleaned_items:
             if item not in seen:
                 seen.add(item)
@@ -428,9 +393,9 @@ class ApiReference(BaseModel):
             return []
 
         # Clean and validate each example
-        cleaned_examples = []
+        cleaned_examples: list[str] = []
         for example in v:
-            if isinstance(example, str) and example.strip():
+            if example and example.strip():
                 # Normalize whitespace but preserve code structure
                 cleaned = example.strip()
                 if cleaned:
@@ -440,8 +405,4 @@ class ApiReference(BaseModel):
 
 
 # Export all models
-__all__ = [
-    "DocumentationPage",
-    "SearchResult",
-    "ApiReference"
-]
+__all__ = ["DocumentationPage", "SearchResult", "ApiReference"]

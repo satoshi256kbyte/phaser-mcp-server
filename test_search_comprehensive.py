@@ -2,13 +2,14 @@
 """Comprehensive test script for search functionality."""
 
 import asyncio
+
 from phaser_mcp_server.client import PhaserDocsClient
 
 
 async def test_search_queries():
     """Test various search queries."""
     client = PhaserDocsClient()
-    
+
     test_queries = [
         "sprite",
         "physics",
@@ -16,16 +17,16 @@ async def test_search_queries():
         "animation tween",
         "getting started",
         "camera zoom",
-        "nonexistent term"
+        "nonexistent term",
     ]
-    
+
     try:
         await client.initialize()
-        
+
         for query in test_queries:
             print(f"\n=== Testing search for: '{query}' ===")
             results = await client.search_content(query, limit=3)
-            
+
             if results:
                 print(f"Found {len(results)} results:")
                 for result in results:
@@ -34,10 +35,11 @@ async def test_search_queries():
                     print(f"     Snippet: {result.snippet}")
             else:
                 print("No results found.")
-                
+
     except Exception as e:
         print(f"Search test failed: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         await client.close()

@@ -1,4 +1,4 @@
-"""Phaser MCP Server - Model Context Protocol server for Phaser game engine documentation.
+"""Phaser MCP Server - Model Context Protocol server for Phaser game engine docs.
 
 This package provides MCP tools for accessing Phaser documentation, API references,
 and tutorials to assist game developers using AI assistants.
@@ -11,6 +11,6 @@ __description__ = "MCP Server for Phaser Game Engine Documentation"
 # Package metadata
 __all__ = [
     "__version__",
-    "__author__", 
+    "__author__",
     "__description__",
 ]

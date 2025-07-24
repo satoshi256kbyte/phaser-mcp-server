@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  phaser-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: phaser-mcp-server:latest
+    container_name: phaser-mcp-server
+    environment:
+      - FASTMCP_LOG_LEVEL=INFO  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+      - PHASER_DOCS_TIMEOUT=30  # Timeout in seconds for HTTP requests
+      - PHASER_DOCS_MAX_RETRIES=3  # Maximum number of retries for failed requests
+    ports:
+      - "8000:8000"  # Expose the MCP server port
+    healthcheck:
+      test: ["CMD", "docker-healthcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

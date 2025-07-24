@@ -11,7 +11,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from loguru import logger
 
-from .models import DocumentationPage, SearchResult
+from .models import ApiReference, DocumentationPage, SearchResult
 
 
 class PhaserDocsError(Exception):
@@ -48,18 +48,10 @@ class PhaserDocsClient:
     """
 
     # Allowed domains for security
-    ALLOWED_DOMAINS = {
-        "docs.phaser.io",
-        "phaser.io",
-        "www.phaser.io"
-    }
+    ALLOWED_DOMAINS = {"docs.phaser.io", "phaser.io", "www.phaser.io"}
 
     # Allowed content types for security
-    ALLOWED_CONTENT_TYPES = {
-        "text/html",
-        "application/xhtml+xml",
-        "text/plain"
-    }
+    ALLOWED_CONTENT_TYPES = {"text/html", "application/xhtml+xml", "text/plain"}
 
     # Maximum response size to prevent DoS (1MB)
     MAX_RESPONSE_SIZE = 1024 * 1024
@@ -67,10 +59,7 @@ class PhaserDocsClient:
     # Default headers for requests
     DEFAULT_HEADERS = {
         "User-Agent": "Phaser-MCP-Server/1.0.0 (Documentation Access Bot)",
-        "Accept": (
-            "text/html,application/xhtml+xml,application/xml;"
-            "q=0.9,*/*;q=0.8"
-        ),
+        "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
         "Accept-Language": "en-US,en;q=0.5",
         "Accept-Encoding": "gzip, deflate",
         "DNT": "1",
@@ -83,7 +72,7 @@ class PhaserDocsClient:
         base_url: str = "https://docs.phaser.io",
         timeout: float = 30.0,
         max_retries: int = 3,
-        retry_delay: float = 1.0
+        retry_delay: float = 1.0,
     ) -> None:
         """Initialize the Phaser documentation client.
 
@@ -118,7 +107,12 @@ class PhaserDocsClient:
         await self._ensure_client()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object | None,
+    ) -> None:
         """Async context manager exit."""
         await self.close()
 
@@ -129,10 +123,7 @@ class PhaserDocsClient:
                 timeout=httpx.Timeout(self.timeout),
                 headers=self.DEFAULT_HEADERS,
                 follow_redirects=True,
-                limits=httpx.Limits(
-                    max_keepalive_connections=10,
-                    max_connections=20
-                )
+                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
             )
             logger.debug("HTTP client initialized")
 
@@ -152,13 +143,13 @@ class PhaserDocsClient:
             # Test basic connectivity to the main Phaser docs page
             health_check_url = f"{self.base_url}/"
             logger.debug(f"Performing health check on: {health_check_url}")
-            
+
             # Make a simple HEAD request to avoid downloading content
             if self._client is None:
                 raise RuntimeError("HTTP client not initialized")
-            
+
             response = await self._client.head(health_check_url)
-            
+
             # Accept any 2xx or 3xx status code as healthy
             if 200 <= response.status_code < 400:
                 logger.debug(f"Health check passed: {response.status_code}")
@@ -166,7 +157,7 @@ class PhaserDocsClient:
                 raise HTTPError(
                     f"Health check failed with status: {response.status_code}"
                 )
-                
+
         except httpx.TimeoutException as e:
             raise NetworkError(f"Health check timeout: {e}") from e
         except httpx.ConnectError as e:
@@ -198,9 +189,7 @@ class PhaserDocsClient:
             # Check scheme
             if parsed.scheme not in ("http", "https"):
                 self._log_security_event(
-                    "INVALID_SCHEME",
-                    f"Invalid URL scheme: {parsed.scheme}",
-                    url
+                    "INVALID_SCHEME", f"Invalid URL scheme: {parsed.scheme}", url
                 )
                 return False
 
@@ -209,16 +198,14 @@ class PhaserDocsClient:
                 self._log_security_event(
                     "DOMAIN_VIOLATION",
                     f"URL not from allowed domains: {parsed.netloc}",
-                    url
+                    url,
                 )
                 return False
 
             # Prevent path traversal attempts
             if ".." in parsed.path:
                 self._log_security_event(
-                    "PATH_TRAVERSAL_ATTEMPT",
-                    "Path traversal attempt detected",
-                    url
+                    "PATH_TRAVERSAL_ATTEMPT", "Path traversal attempt detected", url
                 )
                 return False
 
@@ -231,7 +218,7 @@ class PhaserDocsClient:
                         self._log_security_event(
                             "SUSPICIOUS_QUERY_PARAM",
                             f"Suspicious query parameter: {param}",
-                            url
+                            url,
                         )
                         return False
 
@@ -244,7 +231,7 @@ class PhaserDocsClient:
                         self._log_security_event(
                             "SUSPICIOUS_FRAGMENT",
                             f"Suspicious fragment scheme: {scheme}",
-                            url
+                            url,
                         )
                         return False
 
@@ -254,16 +241,14 @@ class PhaserDocsClient:
                 self._log_security_event(
                     "ENCODED_ATTACK_ATTEMPT",
                     "Potentially malicious encoded characters detected",
-                    url
+                    url,
                 )
                 return False
 
             # Check for excessively long URLs (potential DoS)
             if len(url) > 2048:
                 self._log_security_event(
-                    "EXCESSIVE_URL_LENGTH",
-                    f"URL too long: {len(url)} characters",
-                    url
+                    "EXCESSIVE_URL_LENGTH", f"URL too long: {len(url)} characters", url
                 )
                 return False
 
@@ -271,9 +256,7 @@ class PhaserDocsClient:
 
         except Exception as e:
             self._log_security_event(
-                "URL_VALIDATION_ERROR",
-                f"URL validation error: {e}",
-                url
+                "URL_VALIDATION_ERROR", f"URL validation error: {e}", url
             )
             return False
 
@@ -302,9 +285,7 @@ class PhaserDocsClient:
 
         # Final validation
         if not self._is_allowed_url(url):
-            raise ValueError(
-                f"URL not from allowed domains: {original_url}"
-            )
+            raise ValueError(f"URL not from allowed domains: {original_url}")
 
         return url
 
@@ -321,9 +302,7 @@ class PhaserDocsClient:
             return ""
 
         # Remove null bytes and control characters (except tab, newline, CR)
-        sanitized = "".join(
-            c for c in input_str if ord(c) >= 32 or c in '\t\n\r'
-        )
+        sanitized = "".join(c for c in input_str if ord(c) >= 32 or c in "\t\n\r")
 
         # Limit length to prevent DoS
         max_length = 2048
@@ -374,7 +353,7 @@ class PhaserDocsClient:
             self._log_security_event(
                 "QUERY_TRUNCATION",
                 f"Search query truncated from {len(sanitized_query)} to "
-                f"{max_query_length} characters"
+                f"{max_query_length} characters",
             )
             sanitized_query = sanitized_query[:max_query_length]
 
@@ -388,7 +367,7 @@ class PhaserDocsClient:
             "onerror=",
             "eval(",
             "document.cookie",
-            "window.location"
+            "window.location",
         ]
 
         query_lower = sanitized_query.lower()
@@ -397,7 +376,7 @@ class PhaserDocsClient:
                 self._log_security_event(
                     "SUSPICIOUS_QUERY_PATTERN",
                     f"Suspicious pattern detected: {pattern}",
-                    query
+                    query,
                 )
                 raise ValueError(
                     f"Suspicious pattern detected in search query: {pattern}"
@@ -414,13 +393,9 @@ class PhaserDocsClient:
         Returns:
             Delay in seconds
         """
-        return self.retry_delay * (2 ** attempt)
+        return self.retry_delay * (2**attempt)
 
-    async def _handle_rate_limit(
-        self,
-        attempt: int,
-        url: str
-    ) -> None:
+    async def _handle_rate_limit(self, attempt: int, url: str) -> None:
         """Handle rate limiting with retry logic.
 
         Args:
@@ -432,20 +407,12 @@ class PhaserDocsClient:
         """
         if attempt < self.max_retries:
             wait_time = self._calculate_retry_delay(attempt)
-            logger.warning(
-                f"Rate limited, waiting {wait_time}s before retry"
-            )
+            logger.warning(f"Rate limited, waiting {wait_time}s before retry")
             await asyncio.sleep(wait_time)
         else:
-            raise RateLimitError(
-                f"Rate limited after {self.max_retries} retries"
-            )
+            raise RateLimitError(f"Rate limited after {self.max_retries} retries")
 
-    async def _handle_server_error(
-        self,
-        status_code: int,
-        attempt: int
-    ) -> bool:
+    async def _handle_server_error(self, status_code: int, attempt: int) -> bool:
         """Handle server errors with retry logic.
 
         Args:
@@ -457,17 +424,13 @@ class PhaserDocsClient:
         """
         if status_code >= 500 and attempt < self.max_retries:
             wait_time = self._calculate_retry_delay(attempt)
-            logger.warning(
-                f"Server error {status_code}, retrying in {wait_time}s"
-            )
+            logger.warning(f"Server error {status_code}, retrying in {wait_time}s")
             await asyncio.sleep(wait_time)
             return True
         return False
 
     def _handle_http_status_error(
-        self,
-        error: httpx.HTTPStatusError,
-        url: str
+        self, error: httpx.HTTPStatusError, url: str
     ) -> HTTPError:
         """Handle HTTP status errors and convert to appropriate exceptions.
 
@@ -489,18 +452,13 @@ class PhaserDocsClient:
         if status_code == 403:
             raise HTTPError(f"Access forbidden: {url}") from error
         if 400 <= status_code < 500:
-            raise HTTPError(
-                f"Client error {status_code}: {url}"
-            ) from error
+            raise HTTPError(f"Client error {status_code}: {url}") from error
 
         # Return server errors for potential retry
         return HTTPError(f"HTTP error {status_code}: {error}")
 
     async def _handle_network_error(
-        self,
-        error: Exception,
-        attempt: int,
-        error_type: str
+        self, error: Exception, attempt: int, error_type: str
     ) -> NetworkError:
         """Handle network errors with retry logic.
 
@@ -533,13 +491,13 @@ class PhaserDocsClient:
         # Check content type
         content_type = response.headers.get("content-type", "").lower()
         content_type_main = content_type.split(";")[0].strip()
-        
+
         if content_type_main not in self.ALLOWED_CONTENT_TYPES:
             logger.warning(
                 f"Unexpected content type: {content_type_main} for {response.url}"
             )
             # Allow it but log the warning - some pages might have variations
-        
+
         # Check response size
         content_length = response.headers.get("content-length")
         if content_length:
@@ -552,25 +510,26 @@ class PhaserDocsClient:
                     )
             except ValueError:
                 logger.warning(f"Invalid content-length header: {content_length}")
-        
+
         # Check actual content size if no content-length header
-        if hasattr(response, '_content') and response._content:
-            actual_size = len(response._content)
+        # Access content through the public interface
+        if response.content:
+            actual_size = len(response.content)
             if actual_size > self.MAX_RESPONSE_SIZE:
                 raise ValidationError(
                     f"Response content too large: {actual_size} bytes "
                     f"(max: {self.MAX_RESPONSE_SIZE})"
                 )
-        
+
         # Log security-relevant headers for monitoring
         security_headers = [
             "x-frame-options",
-            "x-content-type-options", 
+            "x-content-type-options",
             "x-xss-protection",
             "content-security-policy",
-            "strict-transport-security"
+            "strict-transport-security",
         ]
-        
+
         for header in security_headers:
             if header in response.headers:
                 logger.debug(f"Security header {header}: {response.headers[header]}")
@@ -598,8 +557,7 @@ class PhaserDocsClient:
         for attempt in range(self.max_retries + 1):
             try:
                 logger.debug(
-                    f"Request attempt {attempt + 1}/{self.max_retries + 1} "
-                    f"for {url}"
+                    f"Request attempt {attempt + 1}/{self.max_retries + 1} for {url}"
                 )
 
                 response = await self._client.get(url)
@@ -644,9 +602,7 @@ class PhaserDocsClient:
                     raise
 
                 # Server errors - prepare for retry
-                last_exception = HTTPError(
-                    f"HTTP error {e.response.status_code}: {e}"
-                )
+                last_exception = HTTPError(f"HTTP error {e.response.status_code}: {e}")
                 if attempt < self.max_retries:
                     wait_time = self._calculate_retry_delay(attempt)
                     logger.warning(f"HTTP error, retrying in {wait_time}s")
@@ -671,9 +627,7 @@ class PhaserDocsClient:
             logger.error(f"All {self.max_retries + 1} attempts failed for {url}")
             raise last_exception
 
-        raise NetworkError(
-            f"Request failed after {self.max_retries + 1} attempts"
-        )
+        raise NetworkError(f"Request failed after {self.max_retries + 1} attempts")
 
     async def fetch_page(self, url: str) -> str:
         """Fetch a single page content with retry logic.
@@ -704,8 +658,7 @@ class PhaserDocsClient:
             content = response.text
 
             logger.debug(
-                f"Successfully fetched {len(content)} characters "
-                f"from {validated_url}"
+                f"Successfully fetched {len(content)} characters from {validated_url}"
             )
             return content
 
@@ -746,7 +699,7 @@ class PhaserDocsClient:
             url=validated_url,
             title=title,
             content=html_content,
-            content_type="text/html"
+            content_type="text/html",
         )
 
     def _extract_title(self, html_content: str) -> str:
@@ -761,25 +714,19 @@ class PhaserDocsClient:
         try:
             # Simple title extraction - look for <title> tag
             title_match = re.search(
-                r'<title[^>]*>(.*?)</title>',
-                html_content,
-                re.IGNORECASE | re.DOTALL
+                r"<title[^>]*>(.*?)</title>", html_content, re.IGNORECASE | re.DOTALL
             )
             if title_match:
                 title = title_match.group(1).strip()
                 # Clean up HTML entities and whitespace
-                title = re.sub(r'\s+', ' ', title)
+                title = re.sub(r"\s+", " ", title)
                 return title
         except Exception as e:
             logger.warning(f"Failed to extract title: {e}")
 
         return "Phaser Documentation"
 
-    async def search_content(
-        self,
-        query: str,
-        limit: int = 10
-    ) -> list[SearchResult]:
+    async def search_content(self, query: str, limit: int = 10) -> list[SearchResult]:
         """Search for content in Phaser documentation.
 
         This implementation searches through known Phaser documentation pages
@@ -802,7 +749,7 @@ class PhaserDocsClient:
             raise ValidationError(str(e)) from e
 
         # Validate limit parameter
-        if not isinstance(limit, int) or limit < 1:
+        if limit < 1:
             raise ValueError("Limit must be a positive integer")
 
         if limit > 100:
@@ -816,7 +763,7 @@ class PhaserDocsClient:
             search_results = await self._perform_documentation_search(
                 sanitized_query, limit
             )
-            
+
             logger.info(f"Search completed: {len(search_results)} results found")
             return search_results
 
@@ -825,9 +772,7 @@ class PhaserDocsClient:
             raise NetworkError(f"Search failed: {e}") from e
 
     async def _perform_documentation_search(
-        self,
-        query: str,
-        limit: int
+        self, query: str, limit: int
     ) -> list[SearchResult]:
         """Perform actual documentation search across known Phaser pages.
 
@@ -841,104 +786,119 @@ class PhaserDocsClient:
         Raises:
             NetworkError: If search fails due to network issues
         """
+        from typing import TypedDict, List, Optional
+
+        class PageInfo(TypedDict):
+            url: str
+            title: str
+            priority: float
+            keywords: List[str]
+
         # Define known Phaser documentation pages to search
-        # These are representative URLs - in a real implementation, 
+        # These are representative URLs - in a real implementation,
         # these would be discovered through site crawling or API
-        search_pages = [
+        search_pages: list[PageInfo] = [
             {
                 "url": "https://docs.phaser.io/getting-started",
                 "title": "Getting Started with Phaser",
                 "priority": 1.0,
-                "keywords": ["getting", "started", "tutorial", "begin", "first", "game"]
+                "keywords": [
+                    "getting",
+                    "started",
+                    "tutorial",
+                    "begin",
+                    "first",
+                    "game",
+                ],
             },
             {
                 "url": "https://docs.phaser.io/sprites-and-images",
                 "title": "Working with Sprites and Images",
                 "priority": 0.9,
-                "keywords": ["sprite", "image", "texture", "display", "gameobject"]
+                "keywords": ["sprite", "image", "texture", "display", "gameobject"],
             },
             {
                 "url": "https://docs.phaser.io/scenes",
                 "title": "Understanding Scenes",
                 "priority": 0.9,
-                "keywords": ["scene", "state", "manager", "lifecycle"]
+                "keywords": ["scene", "state", "manager", "lifecycle"],
             },
             {
                 "url": "https://docs.phaser.io/physics",
                 "title": "Physics Systems",
                 "priority": 0.8,
-                "keywords": ["physics", "arcade", "matter", "collision", "body"]
+                "keywords": ["physics", "arcade", "matter", "collision", "body"],
             },
             {
                 "url": "https://docs.phaser.io/input-handling",
                 "title": "Input Handling",
                 "priority": 0.8,
-                "keywords": ["input", "keyboard", "mouse", "touch", "pointer"]
+                "keywords": ["input", "keyboard", "mouse", "touch", "pointer"],
             },
             {
                 "url": "https://docs.phaser.io/animations",
                 "title": "Animations and Tweens",
                 "priority": 0.8,
-                "keywords": ["animation", "tween", "timeline", "motion"]
+                "keywords": ["animation", "tween", "timeline", "motion"],
             },
             {
                 "url": "https://docs.phaser.io/audio",
                 "title": "Audio and Sound",
                 "priority": 0.7,
-                "keywords": ["audio", "sound", "music", "sfx", "webaudio"]
+                "keywords": ["audio", "sound", "music", "sfx", "webaudio"],
             },
             {
                 "url": "https://docs.phaser.io/cameras",
                 "title": "Camera System",
                 "priority": 0.7,
-                "keywords": ["camera", "viewport", "zoom", "follow"]
+                "keywords": ["camera", "viewport", "zoom", "follow"],
             },
             {
                 "url": "https://docs.phaser.io/tilemaps",
                 "title": "Tilemap Support",
                 "priority": 0.7,
-                "keywords": ["tilemap", "tile", "map", "tiled", "level"]
+                "keywords": ["tilemap", "tile", "map", "tiled", "level"],
             },
             {
                 "url": "https://docs.phaser.io/plugins",
                 "title": "Plugin System",
                 "priority": 0.6,
-                "keywords": ["plugin", "extend", "custom", "addon"]
-            }
+                "keywords": ["plugin", "extend", "custom", "addon"],
+            },
         ]
 
         # API reference pages
-        api_pages = [
+        api_pages: list[PageInfo] = [
             {
                 "url": "https://docs.phaser.io/api/scene",
                 "title": "Phaser.Scene API",
                 "priority": 0.9,
-                "keywords": ["scene", "api", "class", "method", "lifecycle"]
+                "keywords": ["scene", "api", "class", "method", "lifecycle"],
             },
             {
                 "url": "https://docs.phaser.io/api/sprite",
                 "title": "Phaser.GameObjects.Sprite API",
                 "priority": 0.9,
-                "keywords": ["sprite", "gameobject", "api", "texture", "display"]
+                "keywords": ["sprite", "gameobject", "api", "texture", "display"],
             },
             {
                 "url": "https://docs.phaser.io/api/physics-arcade",
                 "title": "Phaser.Physics.Arcade API",
                 "priority": 0.8,
-                "keywords": ["physics", "arcade", "api", "body", "collision"]
+                "keywords": ["physics", "arcade", "api", "body", "collision"],
             },
             {
                 "url": "https://docs.phaser.io/api/input",
                 "title": "Phaser.Input API",
                 "priority": 0.8,
-                "keywords": ["input", "api", "keyboard", "mouse", "pointer"]
+                "keywords": ["input", "api", "keyboard", "mouse", "pointer"],
             },
             {
                 "url": "https://docs.phaser.io/api/cameras",
                 "title": "Phaser.Cameras API",
                 "priority": 0.7,
-                "keywords": ["camera", "api", "viewport", "zoom"]
-            }
+                "keywords": ["camera", "api", "viewport", "zoom"],
+            },
         ]
 
         # Combine all pages to search
@@ -946,9 +906,9 @@ class PhaserDocsClient:
 
         # Prepare search terms
         search_terms = query.lower().split()
-        
+
         # Store search results with scores
-        scored_results = []
+        scored_results: list[dict[str, str | float]] = []
 
         # Search through each page using keyword matching
         for page_info in all_pages:
@@ -957,50 +917,51 @@ class PhaserDocsClient:
                 title_score = self._calculate_title_relevance(
                     page_info["title"], search_terms
                 )
-                
+
                 # Calculate keyword relevance
                 keyword_score = self._calculate_keyword_relevance(
                     page_info.get("keywords", []), search_terms
                 )
-                
+
                 # Combine scores with page priority
-                final_score = (
-                    (title_score * 0.3 + keyword_score * 0.7) * 
-                    page_info["priority"]
-                )
-                
+                final_score = (title_score * 0.3 + keyword_score * 0.7) * page_info[
+                    "priority"
+                ]
+
                 if final_score > 0.1:  # Minimum relevance threshold
                     # Generate a relevant snippet based on keywords and title
                     snippet = self._generate_search_snippet(
-                        page_info["title"], 
-                        page_info.get("keywords", []), 
-                        search_terms
+                        page_info["title"], page_info.get("keywords", []), search_terms
                     )
-                    
-                    scored_results.append({
-                        "score": final_score,
-                        "url": page_info["url"],
-                        "title": page_info["title"],
-                        "snippet": snippet
-                    })
-                        
+
+                    scored_results.append(
+                        {
+                            "score": final_score,
+                            "url": page_info["url"],
+                            "title": page_info["title"],
+                            "snippet": snippet,
+                        }
+                    )
+
             except Exception as e:
                 logger.warning(f"Error processing page {page_info['url']}: {e}")
                 continue
 
         # Sort results by score (descending)
         scored_results.sort(key=lambda x: x["score"], reverse=True)
-        
+
         # Convert to SearchResult objects
-        search_results = []
+        search_results: list[SearchResult] = []
         for i, result in enumerate(scored_results[:limit]):
-            search_results.append(SearchResult(
-                rank_order=i + 1,
-                url=result["url"],
-                title=result["title"],
-                snippet=result["snippet"],
-                relevance_score=round(result["score"], 3)
-            ))
+            search_results.append(
+                SearchResult(
+                    rank_order=i + 1,
+                    url=result["url"],
+                    title=result["title"],
+                    snippet=result["snippet"],
+                    relevance_score=round(result["score"], 3),
+                )
+            )
 
         return search_results
 
@@ -1028,9 +989,7 @@ class PhaserDocsClient:
         return matches / total_terms if total_terms > 0 else 0.0
 
     def _calculate_keyword_relevance(
-        self, 
-        keywords: list[str], 
-        search_terms: list[str]
+        self, keywords: list[str], search_terms: list[str]
     ) -> float:
         """Calculate relevance score based on keyword matching.
 
@@ -1046,7 +1005,7 @@ class PhaserDocsClient:
 
         # Convert keywords to lowercase for comparison
         keywords_lower = [kw.lower() for kw in keywords]
-        
+
         matches = 0
         total_terms = len(search_terms)
 
@@ -1065,10 +1024,7 @@ class PhaserDocsClient:
         return min(matches / total_terms, 1.0) if total_terms > 0 else 0.0
 
     def _generate_search_snippet(
-        self,
-        title: str,
-        keywords: list[str],
-        search_terms: list[str]
+        self, title: str, keywords: list[str], search_terms: list[str]
     ) -> str:
         """Generate a relevant snippet for search results based on keywords and title.
 
@@ -1096,7 +1052,8 @@ class PhaserDocsClient:
         if matching_keywords:
             snippet = f"This page covers {', '.join(matching_keywords[:3])}."
             if len(matching_keywords) > 3:
-                snippet += f" Also includes information about {', '.join(matching_keywords[3:5])}."
+                more_keywords = ", ".join(matching_keywords[3:5])
+                snippet += f" Also includes information about {more_keywords}."
         else:
             # Fallback to a generic snippet based on title
             snippet = f"Documentation page about {title.lower()}."
@@ -1104,9 +1061,7 @@ class PhaserDocsClient:
         return snippet
 
     def _calculate_content_relevance(
-        self, 
-        html_content: str, 
-        search_terms: list[str]
+        self, html_content: str, search_terms: list[str]
     ) -> float:
         """Calculate relevance score based on content matching.
 
@@ -1121,8 +1076,8 @@ class PhaserDocsClient:
             return 0.0
 
         # Simple text extraction from HTML (remove tags)
-        text_content = re.sub(r'<[^>]+>', ' ', html_content).lower()
-        
+        text_content = re.sub(r"<[^>]+>", " ", html_content).lower()
+
         # Count term occurrences
         total_matches = 0
         for term in search_terms:
@@ -1139,9 +1094,7 @@ class PhaserDocsClient:
         return relevance
 
     def _extract_search_snippet(
-        self, 
-        html_content: str, 
-        search_terms: list[str]
+        self, html_content: str, search_terms: list[str]
     ) -> str:
         """Extract a relevant snippet from content for search results.
 
@@ -1156,29 +1109,29 @@ class PhaserDocsClient:
             return ""
 
         # Remove HTML tags and normalize whitespace
-        text_content = re.sub(r'<[^>]+>', ' ', html_content)
-        text_content = re.sub(r'\s+', ' ', text_content).strip()
+        text_content = re.sub(r"<[^>]+>", " ", html_content)
+        text_content = re.sub(r"\s+", " ", text_content).strip()
 
         # Find the first occurrence of any search term
         best_position = -1
-        best_term = ""
-        
+
         for term in search_terms:
             position = text_content.lower().find(term.lower())
             if position != -1 and (best_position == -1 or position < best_position):
                 best_position = position
-                best_term = term
 
         if best_position == -1:
             # No terms found, return beginning of content
-            return text_content[:200] + "..." if len(text_content) > 200 else text_content
+            return (
+                text_content[:200] + "..." if len(text_content) > 200 else text_content
+            )
 
         # Extract snippet around the found term
         snippet_start = max(0, best_position - 100)
         snippet_end = min(len(text_content), best_position + 200)
-        
+
         snippet = text_content[snippet_start:snippet_end]
-        
+
         # Add ellipsis if we're not at the beginning/end
         if snippet_start > 0:
             snippet = "..." + snippet
@@ -1201,44 +1154,290 @@ class PhaserDocsClient:
             NetworkError: For network-related errors
             HTTPError: For HTTP status errors
         """
-        from .models import ApiReference
-        
+        # ApiReference already imported at module level
+
         try:
             # Sanitize class name
             sanitized_class_name = self._sanitize_input(class_name)
             if not sanitized_class_name:
                 raise ValidationError("Class name is empty after sanitization")
-            
-            # Construct API URL - this is a basic implementation
-            # In a full implementation, this would use Phaser's API structure
-            api_url = f"https://docs.phaser.io/api/{sanitized_class_name}"
-            
+
+            # Construct API URL - try different possible URL patterns
+            possible_urls = [
+                f"https://docs.phaser.io/api/{sanitized_class_name}",
+                f"https://docs.phaser.io/api/Phaser.{sanitized_class_name}",
+                f"https://docs.phaser.io/api/Phaser.GameObjects.{sanitized_class_name}",
+                f"https://docs.phaser.io/api/Phaser.Scene.{sanitized_class_name}",
+            ]
+
             logger.info(f"Fetching API reference for class: {sanitized_class_name}")
-            
-            # Fetch the API page
-            html_content = await self.fetch_page(api_url)
-            
-            # Extract basic information (this would be enhanced in a full implementation)
-            title = self._extract_title(html_content)
-            
-            # Create basic API reference
+
+            # Try to fetch from the most likely URL first
+            api_url = possible_urls[0]
+            html_content = None
+
+            for url in possible_urls:
+                try:
+                    html_content = await self.fetch_page(url)
+                    api_url = url
+                    logger.debug(f"Successfully fetched API page from: {url}")
+                    break
+                except HTTPError as e:
+                    if "404" in str(e):
+                        logger.debug(f"API page not found at: {url}")
+                        continue
+                    else:
+                        raise
+
+            if html_content is None:
+                # If no specific API page found, create a basic reference
+                logger.warning(
+                    f"No specific API page found for {sanitized_class_name}, "
+                    f"creating basic reference"
+                )
+                api_url = possible_urls[0]  # Use the first URL as fallback
+
+                return ApiReference(
+                    class_name=sanitized_class_name,
+                    url=api_url,
+                    description=(
+                        f"API reference for {sanitized_class_name}. "
+                        "No specific documentation page found."
+                    ),
+                    methods=[],
+                    properties=[],
+                    examples=[],
+                )
+
+            # Extract information from the HTML content
+            api_info = self._extract_api_information_from_html(
+                html_content, sanitized_class_name
+            )
+
+            # Create API reference with extracted information
             api_ref = ApiReference(
                 class_name=sanitized_class_name,
                 url=api_url,
-                description=f"API reference for {sanitized_class_name}",
-                methods=[],
-                properties=[],
-                examples=[]
+                description=api_info.get(
+                    "description", f"API reference for {sanitized_class_name}"
+                ),
+                methods=api_info.get("methods", []),
+                properties=api_info.get("properties", []),
+                examples=api_info.get("examples", []),
+                parent_class=api_info.get("parent_class"),
+                namespace=api_info.get("namespace"),
             )
-            
-            logger.info(f"Successfully retrieved API reference for {sanitized_class_name}")
+
+            logger.info(
+                f"Successfully retrieved API reference for {sanitized_class_name}"
+            )
             return api_ref
-            
+
         except (ValidationError, NetworkError, HTTPError):
             raise
         except Exception as e:
-            logger.error(f"Unexpected error getting API reference for '{class_name}': {e}")
+            logger.error(
+                f"Unexpected error getting API reference for '{class_name}': {e}"
+            )
             raise NetworkError(f"Unexpected error: {e}") from e
+
+    def _extract_api_information_from_html(
+        self, html_content: str, class_name: str
+    ) -> dict[str, str | list[str] | None]:
+        """Extract API information from HTML content.
+
+        Args:
+            html_content: HTML content of the API page
+            class_name: Name of the class being processed
+
+        Returns:
+            Dictionary containing extracted API information
+        """
+        try:
+            # re already imported at module level
+            from bs4 import BeautifulSoup
+
+            soup = BeautifulSoup(html_content, "html.parser")
+            api_info: dict[str, str | list[str] | None] = {
+                "description": "",
+                "methods": [],
+                "properties": [],
+                "examples": [],
+                "parent_class": None,
+                "namespace": None,
+            }
+
+            # Extract description from various possible locations
+            description_selectors = [
+                ".class-description",
+                ".api-description",
+                ".description",
+                "p:first-of-type",
+                ".summary",
+            ]
+
+            for selector in description_selectors:
+                desc_element = soup.select_one(selector)
+                if desc_element:
+                    description = desc_element.get_text(strip=True)
+                    if (
+                        description and len(description) > 10
+                    ):  # Avoid very short descriptions
+                        api_info["description"] = description
+                        break
+
+            # If no description found, use a default
+            if not api_info["description"]:
+                api_info["description"] = f"API reference for {class_name}"
+
+            # Extract methods
+            method_selectors = [
+                ".method-list .method-name",
+                ".methods .method",
+                ".method h3",
+                ".method",
+                "[data-method]",
+            ]
+
+            methods: set[str] = set()
+            for selector in method_selectors:
+                for element in soup.select(selector):
+                    method_text = element.get_text(strip=True)
+                    if method_text:
+                        # Clean method name (remove parameters, etc.)
+                        method_name = re.sub(r"\([^)]*\)", "", method_text).strip()
+                        if method_name and not method_name.startswith("_"):
+                            # Skip private methods
+                            methods.add(method_name)
+
+            # Also look for methods in sections with "Methods" heading
+            methods_sections = soup.find_all(
+                ["h2", "h3"], string=re.compile(r"Methods?", re.IGNORECASE)
+            )
+            for section in methods_sections:
+                # Find the next sibling that contains method information
+                next_element = section.find_next_sibling()
+                while next_element:
+                    if next_element.name in ["h2", "h3"]:  # Stop at next heading
+                        break
+                    if next_element.name in ["ul", "ol", "div"]:
+                        for method_elem in next_element.find_all(
+                            ["li", "div", "h3", "h4"]
+                        ):
+                            method_text = method_elem.get_text(strip=True)
+                            if method_text:
+                                method_name = re.sub(
+                                    r"\([^)]*\)", "", method_text
+                                ).strip()
+                                if (
+                                    method_name
+                                    and not method_name.startswith("_")
+                                    and len(method_name) < 50
+                                ):
+                                    methods.add(method_name)
+                    next_element = next_element.find_next_sibling()
+
+            api_info["methods"] = sorted(methods)
+
+            # Extract properties
+            property_selectors = [
+                ".property-list .property-name",
+                ".properties .property",
+                "[data-property]",
+                "h3:contains('Properties') + ul li",
+                "h2:contains('Properties') + ul li",
+            ]
+
+            properties: set[str] = set()
+            for selector in property_selectors:
+                for element in soup.select(selector):
+                    prop_text = element.get_text(strip=True)
+                    if prop_text:
+                        # Clean property name
+                        prop_name = prop_text.split(":")[0].split("=")[0].strip()
+                        if prop_name and not prop_name.startswith("_"):
+                            # Skip private properties
+                            properties.add(prop_name)
+
+            api_info["properties"] = sorted(properties)
+
+            # Extract code examples
+            example_selectors = [
+                "pre code",
+                ".example code",
+                ".code-example",
+                "code.language-javascript",
+            ]
+
+            examples: list[str] = []
+            for selector in example_selectors:
+                for element in soup.select(selector):
+                    code_text = element.get_text(strip=True)
+                    if code_text and len(code_text) > 10:  # Avoid very short snippets
+                        # Clean up the code
+                        cleaned_code = re.sub(r"\n\s*\n", "\n", code_text)
+                        if cleaned_code not in examples:  # Avoid duplicates
+                            examples.append(cleaned_code)
+
+            api_info["examples"] = examples[:5]  # Limit to 5 examples
+
+            # Extract parent class information
+            inheritance_selectors = [".inheritance", ".extends", ".parent-class"]
+
+            for selector in inheritance_selectors:
+                element = soup.select_one(selector)
+                if element:
+                    parent_text = element.get_text(strip=True)
+                    if "extends" in parent_text.lower():
+                        # Extract parent class name
+                        parent_match = re.search(
+                            r"extends\s+([A-Za-z0-9_.]+)", parent_text
+                        )
+                        if parent_match:
+                            api_info["parent_class"] = parent_match.group(1)
+                            break
+
+            # Extract namespace information
+            if "." in class_name:
+                api_info["namespace"] = ".".join(class_name.split(".")[:-1])
+            else:
+                # Try to detect namespace from page content
+                namespace_patterns = [
+                    r"Phaser\.GameObjects\." + re.escape(class_name),
+                    r"Phaser\.Scene\." + re.escape(class_name),
+                    r"Phaser\." + re.escape(class_name),
+                ]
+
+                page_text = soup.get_text()
+                for pattern in namespace_patterns:
+                    if re.search(pattern, page_text):
+                        namespace = (
+                            pattern.replace(re.escape(class_name), "")
+                            .replace("\\", "")
+                            .rstrip(".")
+                        )
+                        api_info["namespace"] = namespace
+                        break
+
+            logger.debug(
+                f"Extracted API info for {class_name}: "
+                f"{len(api_info['methods'])} methods, "
+                f"{len(api_info['properties'])} properties, "
+                f"{len(api_info['examples'])} examples"
+            )
+
+            return api_info
+
+        except Exception as e:
+            logger.warning(f"Error extracting API information: {e}")
+            return {
+                "description": f"API reference for {class_name}",
+                "methods": [],
+                "properties": [],
+                "examples": [],
+                "parent_class": None,
+                "namespace": None,
+            }
 
 
 # Export the client class
