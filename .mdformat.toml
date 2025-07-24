@@ -1,0 +1,23 @@
+# mdformat configuration
+# See: https://mdformat.readthedocs.io/en/stable/users/configuration_file.html
+
+# Line length for wrapping
+wrap = 88
+
+# Extensions to enable
+extensions = [
+    "gfm",          # GitHub Flavored Markdown
+    "frontmatter",  # YAML frontmatter support
+    "tables",       # Table formatting
+]
+
+# Plugin configurations
+[plugin.gfm]
+# Enable GitHub Flavored Markdown features
+strikethrough = true
+task_list = true
+autolink = true
+
+[plugin.tables]
+# Table formatting options
+compact = false

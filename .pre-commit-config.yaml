@@ -30,7 +30,14 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
-
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-frontmatter
+          - mdformat-tables
 
   - repo: local
     hooks:

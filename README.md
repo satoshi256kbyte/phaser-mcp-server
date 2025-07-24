@@ -1,12 +1,14 @@
 # Phaser MCP Server
 
-ゲームエンジン[Phaser](https://phaser.io/)を使ったゲーム開発を補助するためのModel Context Protocol (MCP) サーバーです。このMCPサーバーは、生成AIが[Phaserの公式ドキュメント](https://docs.phaser.io/phaser/)を効率的に参照するのが役割です。
+ゲームエンジン[Phaser](https://phaser.io/)を使ったゲーム開発を補助するためのModel Context Protocol (MCP)
+サーバーです。このMCPサーバーは、生成AIが[Phaserの公式ドキュメント](https://docs.phaser.io/phaser/)を効率的に参照するのが役割です。
 
 ## 概要
 
 このMCPサーバーは、AIアシスタントがPhaser公式ドキュメント、APIリファレンス、チュートリアルにアクセスして検索できるようにします。ゲーム開発者がPhaserのAPIや機能について正確で最新の情報を取得するのを支援するように設計されています。
 
-AWS Documentation MCP Serverのアーキテクチャをベースとし、Phaserドキュメント（<https://docs.phaser.io/>）に特化した機能を提供します。
+AWS Documentation MCP
+Serverのアーキテクチャをベースとし、Phaserドキュメント（<https://docs.phaser.io/>）に特化した機能を提供します。
 
 ## 機能
 
@@ -268,12 +270,12 @@ Phaserドキュメント内でコンテンツを検索します。
 
 以下の環境変数でサーバーの動作をカスタマイズできます：
 
-| 環境変数 | デフォルト値 | 説明 |
-|---------|-------------|------|
-| `FASTMCP_LOG_LEVEL` | `ERROR` | ログレベル（TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL） |
-| `PHASER_DOCS_TIMEOUT` | `30` | HTTPリクエストのタイムアウト（秒） |
-| `PHASER_DOCS_MAX_RETRIES` | `3` | 最大リトライ回数 |
-| `PHASER_DOCS_CACHE_TTL` | `3600` | キャッシュの有効期限（秒、将来の機能用） |
+| 環境変数                  | デフォルト値 | 説明                                                       |
+| ------------------------- | ------------ | ---------------------------------------------------------- |
+| `FASTMCP_LOG_LEVEL`       | `ERROR`      | ログレベル（TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL） |
+| `PHASER_DOCS_TIMEOUT`     | `30`         | HTTPリクエストのタイムアウト（秒）                         |
+| `PHASER_DOCS_MAX_RETRIES` | `3`          | 最大リトライ回数                                           |
+| `PHASER_DOCS_CACHE_TTL`   | `3600`       | キャッシュの有効期限（秒、将来の機能用）                   |
 
 ### コマンドラインオプション
 
@@ -324,6 +326,20 @@ uv sync --dev
 uv run pre-commit install
 ```
 
+#### 開発ツール
+
+開発環境には以下のツールが含まれます：
+
+- **ruff**: Pythonコードのリンティングとフォーマット
+- **pyright**: 型チェック
+- **pytest**: テストフレームワーク
+- **mdformat**: Markdownファイルのフォーマット
+  - mdformat-gfm: GitHub Flavored Markdown対応
+  - mdformat-frontmatter: YAMLフロントマター対応
+  - mdformat-tables: テーブルフォーマット対応
+- **pre-commit**: コミット前の自動チェック
+- **commitizen**: 規約に従ったコミットメッセージ
+
 ### テスト
 
 ```bash
@@ -349,11 +365,39 @@ uv run ruff check
 # コードフォーマットを実行
 uv run ruff format
 
+# Markdownフォーマットを実行
+uv run mdformat README.md docs/ --wrap 88
+
 # 型チェックを実行
 uv run pyright
 
 # 全品質チェックを実行
 uv run pre-commit run --all-files
+```
+
+#### Makefileを使用した場合
+
+```bash
+# Pythonコードのフォーマット
+make format
+
+# Markdownファイルのフォーマット
+make format-md
+
+# 全てのフォーマット（Python + Markdown）
+make format-all
+
+# Markdownフォーマットのチェック（変更なし）
+make format-md-check
+
+# Markdownフォーマットの差分表示
+make format-md-diff
+
+# 全品質チェック
+make check
+
+# pre-commitフックの実行
+make pre-commit
 ```
 
 ### ビルドとパッケージング
@@ -440,9 +484,9 @@ FASTMCP_LOG_LEVEL=DEBUG phaser-mcp-server
 ### デバッグのヒント
 
 1. **接続テスト**: まず`--health-check`オプションでサーバーの基本動作を確認
-2. **ログレベル**: 問題発生時は`--log-level DEBUG`で詳細ログを確認
-3. **ネットワーク**: Phaserドキュメントサイト（docs.phaser.io）への接続を確認
-4. **リソース**: メモリ使用量が多い場合は`max_length`パラメータを調整
+1. **ログレベル**: 問題発生時は`--log-level DEBUG`で詳細ログを確認
+1. **ネットワーク**: Phaserドキュメントサイト（docs.phaser.io）への接続を確認
+1. **リソース**: メモリ使用量が多い場合は`max_length`パラメータを調整
 
 ## パフォーマンス
 
@@ -509,10 +553,10 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
 ## 貢献
 
 1. リポジトリをフォーク
-2. 機能ブランチを作成（`git checkout -b feature/amazing-feature`）
-3. 変更をコミット（`git commit -m 'feat: add amazing feature'`）
-4. ブランチをプッシュ（`git push origin feature/amazing-feature`）
-5. プルリクエストを作成
+1. 機能ブランチを作成（`git checkout -b feature/amazing-feature`）
+1. 変更をコミット（`git commit -m 'feat: add amazing feature'`）
+1. ブランチをプッシュ（`git push origin feature/amazing-feature`）
+1. プルリクエストを作成
 
 ### 開発ガイドライン
 
@@ -525,9 +569,12 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
 
 ### 問題報告・質問
 
-- **バグ報告**: [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
-- **機能要望**: [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
-- **質問・議論**: [GitHub Discussions](https://github.com/phaser-mcp-server/phaser-mcp-server/discussions)
+- **バグ報告**:
+  [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
+- **機能要望**:
+  [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
+- **質問・議論**:
+  [GitHub Discussions](https://github.com/phaser-mcp-server/phaser-mcp-server/discussions)
 
 ### ドキュメント
 
@@ -539,7 +586,8 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
 ### 外部リソース
 
 - **Phaser公式ドキュメント**: [docs.phaser.io](https://docs.phaser.io/)
-- **Model Context Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io/)
+- **Model Context Protocol**:
+  [modelcontextprotocol.io](https://modelcontextprotocol.io/)
 - **uvパッケージマネージャー**: [docs.astral.sh/uv](https://docs.astral.sh/uv/)
 
 ## 関連リンク
