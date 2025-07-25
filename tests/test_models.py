@@ -1029,3 +1029,32 @@ class TestEdgeCasesAndErrorHandling:
         assert recreated_api.examples == original_api.examples
         assert recreated_api.parent_class == original_api.parent_class
         assert recreated_api.namespace == original_api.namespace
+
+    def test_url_parsing_exception_handling(self):
+        """Test URL parsing exception handling in validators."""
+        # Test with extremely malformed URLs that might cause urlparse to fail
+        # These are edge cases that could potentially cause urlparse exceptions
+        
+        # Test with None (should be caught by empty check first)
+        with pytest.raises(ValidationError):
+            DocumentationPage(
+                url=None,  # type: ignore
+                title="Test",
+                content="Test content"
+            )
+            
+        # Test with non-string URL
+        with pytest.raises(ValidationError):
+            SearchResult(
+                rank_order=1,
+                url=123,  # type: ignore
+                title="Test"
+            )
+            
+        # Test with non-string URL for ApiReference
+        with pytest.raises(ValidationError):
+            ApiReference(
+                class_name="TestClass",
+                url=[],  # type: ignore
+                description="Test description"
+            )

@@ -1,0 +1,89 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13", "3.14"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run tests with coverage
+      run: |
+        uv run pytest --cov=phaser_mcp_server --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=90
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+    - name: Upload coverage HTML report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: htmlcov/
+
+    - name: Check individual module coverage
+      run: |
+        uv run python -c "
+        import coverage
+        import sys
+        
+        # Load coverage data
+        cov = coverage.Coverage()
+        cov.load()
+        
+        # Define module coverage thresholds
+        thresholds = {
+            'phaser_mcp_server/models.py': 95,
+            'phaser_mcp_server/parser.py': 90,
+            'phaser_mcp_server/client.py': 90,
+            'phaser_mcp_server/server.py': 90,
+        }
+        
+        # Check each module
+        failed = False
+        for module, threshold in thresholds.items():
+            try:
+                analysis = cov.analysis2(module)
+                total_lines = len(analysis[1]) + len(analysis[2])
+                covered_lines = len(analysis[1])
+                coverage_pct = (covered_lines / total_lines) * 100 if total_lines > 0 else 0
+                
+                print(f'{module}: {coverage_pct:.1f}% (threshold: {threshold}%)')
+                
+                if coverage_pct < threshold:
+                    print(f'❌ {module} coverage {coverage_pct:.1f}% is below threshold {threshold}%')
+                    failed = True
+                else:
+                    print(f'✅ {module} coverage {coverage_pct:.1f}% meets threshold {threshold}%')
+            except Exception as e:
+                print(f'⚠️  Could not check coverage for {module}: {e}')
+        
+        if failed:
+            sys.exit(1)
+        "
