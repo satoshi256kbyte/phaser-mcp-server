@@ -56,15 +56,20 @@ class PhaserDocsClient:
     # Maximum response size to prevent DoS (1MB)
     MAX_RESPONSE_SIZE = 1024 * 1024
 
-    # Default headers for requests
+    # Default headers for requests - using realistic browser headers to avoid bot detection
     DEFAULT_HEADERS = {
-        "User-Agent": "Phaser-MCP-Server/1.0.0 (Documentation Access Bot)",
-        "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "en-US,en;q=0.9,ja;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
         "DNT": "1",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
     }
 
     def __init__(
@@ -99,6 +104,7 @@ class PhaserDocsClient:
 
         # Initialize HTTP client
         self._client: httpx.AsyncClient | None = None
+        self._cookies: httpx.Cookies = httpx.Cookies()
 
         logger.info(f"Initialized PhaserDocsClient with base_url: {self.base_url}")
 
@@ -124,6 +130,7 @@ class PhaserDocsClient:
                 headers=self.DEFAULT_HEADERS,
                 follow_redirects=True,
                 limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+                cookies=self._cookies,
             )
             logger.debug("HTTP client initialized")
 
@@ -131,6 +138,39 @@ class PhaserDocsClient:
         """Initialize the HTTP client."""
         await self._ensure_client()
         logger.info("PhaserDocsClient initialized successfully")
+
+    def set_session_cookies(self, cookies: dict[str, str]) -> None:
+        """Set session cookies for bypassing CAPTCHA.
+
+        This method allows setting cookies obtained from a browser session
+        where a human has already passed the CAPTCHA verification.
+
+        Args:
+            cookies: Dictionary of cookie name-value pairs
+
+        Example:
+            client.set_session_cookies({
+                "cf_clearance": "your_cloudflare_clearance_token",
+                "__cfduid": "your_cloudflare_uid",
+                "session_id": "your_session_id"
+            })
+        """
+        for name, value in cookies.items():
+            self._cookies.set(name, value, domain="docs.phaser.io")
+
+        # If client is already initialized, update its cookies
+        if self._client is not None:
+            self._client.cookies.update(self._cookies)
+
+        logger.info(f"Set {len(cookies)} session cookies for CAPTCHA bypass")
+
+    def get_session_cookies(self) -> dict[str, str]:
+        """Get current session cookies.
+
+        Returns:
+            Dictionary of current cookie name-value pairs
+        """
+        return {name: cookie.value for name, cookie in self._cookies.items()}
 
     async def health_check(self) -> None:
         """Perform a basic health check by testing connectivity to Phaser docs.

@@ -421,6 +421,45 @@ docker build --target builder -t phaser-mcp-server:builder .
 
 ### よくある問題
 
+#### CAPTCHA/Cloudflare保護による403 Forbiddenエラー
+
+Phaser公式ドキュメントサイト（docs.phaser.io）はCloudflareによる保護が有効になっており、ボットアクセスを検出すると人間であることの確認（CAPTCHA）を求める場合があります。
+
+**解決方法:**
+
+1. **ブラウザでCAPTCHAを突破**:
+   - ブラウザで <https://docs.phaser.io/> にアクセス
+   - CAPTCHAまたは「人間であることを確認」画面が表示された場合は、指示に従って認証を完了
+   - 認証完了後、ページが正常に表示されることを確認
+
+2. **セッションCookieの取得**（高度なユーザー向け）:
+
+   ```bash
+   # ブラウザの開発者ツールでCookieを確認
+   # 1. ブラウザでF12キーを押して開発者ツールを開く
+   # 2. Applicationタブ → Cookies → https://docs.phaser.io を選択
+   # 3. cf_clearance、__cfduid などのCookieをメモ
+   ```
+
+3. **プログラムでのCookie設定**（将来の機能）:
+
+   ```python
+   # 将来のバージョンで対応予定
+   client = PhaserDocsClient()
+   client.set_session_cookies({
+       "cf_clearance": "your_cloudflare_clearance_token",
+       "__cfduid": "your_cloudflare_uid"
+   })
+   ```
+
+**注意事項:**
+
+- CAPTCHAの突破は人間が行う必要があります
+- セッションCookieには有効期限があります（通常24時間程度）
+- 頻繁なアクセスやボット的な動作は避けてください
+
+**詳細な対応手順**: [docs/captcha-bypass.md](docs/captcha-bypass.md)を参照してください。
+
 #### 接続エラー
 
 ```bash
