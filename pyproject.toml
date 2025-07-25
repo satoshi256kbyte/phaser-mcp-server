@@ -107,6 +107,7 @@ convention = "google"
 [tool.pyright]
 include = ["phaser_mcp_server", "tests"]
 exclude = ["**/__pycache__"]
+stubPath = "phaser_mcp_server/stubs"
 pythonVersion = "3.14"
 typeCheckingMode = "strict"
 reportMissingImports = true

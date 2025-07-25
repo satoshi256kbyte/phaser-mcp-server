@@ -6,14 +6,23 @@ while preserving code blocks and formatting.
 """
 
 import re
-from typing import Any
+from typing import Any, Dict, List, Optional, Union, cast, TypeVar, Match
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag, NavigableString, PageElement
 from loguru import logger
 from markdownify import markdownify as md
 
 from .models import ApiReference
+
+# Type variables and common types
+T = TypeVar("T")
+TagOrElement = Union[Tag, PageElement, NavigableString]
+TagOrSoup = Union[Tag, BeautifulSoup]
+
+# Suppress specific pyright warnings for BeautifulSoup usage
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnnecessaryIsInstance=false
 
 
 class PhaserParseError(Exception):
@@ -116,7 +125,7 @@ class PhaserDocumentParser:
 
         logger.debug(f"Initialized PhaserDocumentParser with base_url: {self.base_url}")
 
-    def parse_html_content(self, html_content: str, url: str = "") -> dict[str, Any]:
+    def parse_html_content(self, html_content: str, url: str = "") -> Dict[str, Any]:
         """Parse HTML content and extract structured information.
 
         Args:
@@ -155,13 +164,16 @@ class PhaserDocumentParser:
             code_blocks = self._extract_code_blocks(main_content)
 
             # Extract Phaser-specific content
-            phaser_content: dict[str, str | list[dict[str, str]]] = {
+            phaser_content: Dict[str, Union[str, List[Dict[str, str]]]] = {
                 "game_objects": [],
                 "scenes": [],
                 "physics": [],
                 "input": [],
+                "input_handlers": [],
                 "animations": [],
                 "code_blocks": [],
+                "examples": [],
+                "tutorials": [],
                 "raw_content": "",
             }
 
@@ -187,22 +199,67 @@ class PhaserDocumentParser:
             for block in code_blocks:
                 code_text = block["content"]
                 if any(pattern in code_text for pattern in phaser_patterns):
-                    phaser_content["code_blocks"].append(block)
+                    code_blocks_list = cast(
+                        List[Dict[str, str]], phaser_content["code_blocks"]
+                    )
+                    code_blocks_list.append(block)
 
                     # Categorize by content
                     if "this.add" in code_text or "Phaser.GameObjects" in code_text:
-                        phaser_content["game_objects"].append(block)
+                        game_objects_list = cast(
+                            List[Dict[str, str]], phaser_content["game_objects"]
+                        )
+                        game_objects_list.append(block)
                     if "this.scene" in code_text or "Phaser.Scene" in code_text:
-                        phaser_content["scenes"].append(block)
+                        scenes_list = cast(
+                            List[Dict[str, str]], phaser_content["scenes"]
+                        )
+                        scenes_list.append(block)
                     if "this.physics" in code_text or "Phaser.Physics" in code_text:
-                        phaser_content["physics"].append(block)
+                        physics_list = cast(
+                            List[Dict[str, str]], phaser_content["physics"]
+                        )
+                        physics_list.append(block)
                     if "this.input" in code_text or "Phaser.Input" in code_text:
-                        phaser_content["input"].append(block)
+                        input_list = cast(List[Dict[str, str]], phaser_content["input"])
+                        input_list.append(block)
+                    if (
+                        "pointerdown" in code_text
+                        or "click" in code_text.lower()
+                        or "touch" in code_text.lower()
+                        or "setInteractive" in code_text
+                    ):
+                        input_handlers_list = cast(
+                            List[Dict[str, str]], phaser_content["input_handlers"]
+                        )
+                        input_handlers_list.append(block)
                     if "this.anims" in code_text or "Phaser.Animations" in code_text:
-                        phaser_content["animations"].append(block)
+                        animations_list = cast(
+                            List[Dict[str, str]], phaser_content["animations"]
+                        )
+                        animations_list.append(block)
+                    
+                    # Add to examples if it looks like a complete code example
+                    if len(code_text.strip().split("\n")) > 3:
+                        examples_list = cast(List[Dict[str, str]], phaser_content["examples"])
+                        examples_list.append(block)
+                    
+                    # Check for tutorial context
+                    context = block.get("context", "")
+                    if (
+                        "tutorial" in code_text.lower()
+                        or "guide" in code_text.lower()
+                        or "tutorial" in context.lower()
+                        or "guide" in context.lower()
+                    ):
+                        tutorials_list = cast(List[Dict[str, str]], phaser_content["tutorials"])
+                        tutorials_list.append(block)
 
             # Get clean text content
-            text_content = main_content.get_text(separator=" ", strip=True)
+            if isinstance(main_content, Tag):
+                text_content = main_content.get_text(separator=" ", strip=True)
+            else:
+                text_content = ""
 
             return {
                 "title": title,
@@ -221,7 +278,7 @@ class PhaserDocumentParser:
             raise HTMLParseError(f"Unexpected parsing error: {e}") from e
 
     def convert_to_markdown(
-        self, content_input: str | dict[str, Any], url: str = ""
+        self, content_input: Union[str, Dict[str, Any]], url: str = ""
     ) -> str:
         """Convert HTML content or parsed content to Markdown format.
 
@@ -259,7 +316,7 @@ class PhaserDocumentParser:
             prepared_soup = self._prepare_html_for_markdown(soup)
 
             # Convert to Markdown using markdownify
-            markdown_content = md(
+            markdown_content: str = md(
                 str(prepared_soup),
                 heading_style="ATX",  # Use # style headings
                 bullets="-",  # Use - for bullet points
@@ -297,7 +354,7 @@ class PhaserDocumentParser:
             logger.error(f"Unexpected error during Markdown conversion: {e}")
             raise MarkdownConversionError(f"Conversion failed: {e}") from e
 
-    def extract_api_information(self, soup: BeautifulSoup) -> dict[str, Any]:
+    def extract_api_information(self, soup: BeautifulSoup) -> Dict[str, Any]:
         """Extract API information from HTML.
 
         Args:
@@ -311,7 +368,7 @@ class PhaserDocumentParser:
             HTMLParseError: If API information extraction fails
         """
         try:
-            api_info: dict[str, str | list[str]] = {
+            api_info: Dict[str, Union[str, List[str]]] = {
                 "class_name": "",
                 "description": "",
                 "methods": [],
@@ -322,46 +379,72 @@ class PhaserDocumentParser:
             # Extract class name
             for selector in self.API_SELECTORS["class_name"]:
                 element = soup.select_one(selector)
-                if element and element.get_text(strip=True):
+                if element and isinstance(element, Tag) and element.get_text(strip=True):
                     api_info["class_name"] = element.get_text(strip=True)
                     break
 
             # Extract description
             for selector in self.API_SELECTORS["description"]:
                 element = soup.select_one(selector)
-                if element and element.get_text(strip=True):
+                if element and isinstance(element, Tag) and element.get_text(strip=True):
                     api_info["description"] = element.get_text(strip=True)
                     break
 
             # Extract methods
             for selector in self.API_SELECTORS["methods"]:
                 for element in soup.select(selector):
-                    method_name = element.get_text(strip=True)
-                    if method_name and method_name not in api_info["methods"]:
-                        api_info["methods"].append(method_name)
+                    if isinstance(element, Tag):
+                        method_name = element.get_text(strip=True)
+                        methods_list = cast(List[str], api_info["methods"])
+                        if method_name and method_name not in methods_list:
+                            methods_list.append(method_name)
 
             # Extract properties
             for selector in self.API_SELECTORS["properties"]:
                 for element in soup.select(selector):
-                    prop_name = element.get_text(strip=True)
-                    if prop_name and prop_name not in api_info["properties"]:
-                        api_info["properties"].append(prop_name)
+                    if isinstance(element, Tag):
+                        prop_name = element.get_text(strip=True)
+                        properties_list = cast(List[str], api_info["properties"])
+                        if prop_name and prop_name not in properties_list:
+                            properties_list.append(prop_name)
 
             # Extract examples
             for selector in self.API_SELECTORS["examples"]:
                 for element in soup.select(selector):
-                    code_element = element.find("code")
-                    if code_element:
-                        example_code = code_element.get_text(strip=True)
-                        if example_code and example_code not in api_info["examples"]:
-                            api_info["examples"].append(example_code)
+                    if isinstance(element, Tag):
+                        # First try to find code element
+                        code_element = element.find("code")
+                        if code_element and isinstance(code_element, Tag):
+                            example_code = code_element.get_text(strip=True)
+                            examples_list = cast(List[str], api_info["examples"])
+                            if example_code and example_code not in examples_list:
+                                examples_list.append(example_code)
+                        else:
+                            # If no code element, use the element's text directly
+                            example_text = element.get_text(strip=True)
+                            examples_list = cast(List[str], api_info["examples"])
+                            if example_text and example_text not in examples_list:
+                                examples_list.append(example_text)
 
             # If no examples found, try to find code blocks that might be examples
-            if not api_info["examples"]:
+            examples_list = cast(List[str], api_info["examples"])
+            if not examples_list:
                 for code in soup.find_all(["pre", "code"]):
-                    code_text = code.get_text(strip=True)
-                    if code_text and "class" in code_text and "extends" in code_text:
-                        api_info["examples"].append(code_text)
+                    if isinstance(code, Tag):
+                        code_text = code.get_text(strip=True)
+                        # Look for any substantial code block as an example
+                        if (
+                            code_text 
+                            and len(code_text.strip().split("\n")) > 1
+                            and (
+                                "=" in code_text 
+                                or "(" in code_text 
+                                or "new " in code_text
+                                or "this." in code_text
+                                or "function" in code_text
+                            )
+                        ):
+                            examples_list.append(code_text)
 
             logger.debug(f"Extracted API information: {api_info['class_name']}")
             return api_info
@@ -382,10 +465,12 @@ class PhaserDocumentParser:
         try:
             # ApiReference already imported at module level
 
-            if not isinstance(api_ref, ApiReference):
+            if isinstance(api_ref, ApiReference):
+                pass  # Type check satisfied
+            else:
                 raise ValueError("Expected ApiReference object")
 
-            markdown_parts = []
+            markdown_parts: List[str] = []
 
             # Add class name as main heading
             if api_ref.class_name:
@@ -458,23 +543,29 @@ class PhaserDocumentParser:
         """Remove unwanted elements from the parsed HTML."""
         for selector in self.REMOVE_SELECTORS:
             for element in soup.select(selector):
-                element.decompose()
+                if hasattr(element, 'decompose'):
+                    element.decompose()
 
-    def _extract_main_content(self, soup: BeautifulSoup) -> Tag | None:
+    def _extract_main_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Extract the main content area from the HTML."""
         for selector in self.CONTENT_SELECTORS:
             content = soup.select_one(selector)
-            if content and content.get_text(strip=True):
+            if content and isinstance(content, Tag) and content.get_text(strip=True):
                 logger.debug(f"Found main content using selector: {selector}")
                 return content
 
         body = soup.find("body")
-        if body:
+        if body and isinstance(body, Tag):
             logger.debug("Using body as main content (fallback)")
             return body
 
         logger.warning("No main content area found, using entire document")
-        return soup
+        # Create a wrapper tag containing all soup contents
+        wrapper = soup.new_tag("div")
+        for element in soup.contents:
+            if hasattr(element, 'extract'):
+                wrapper.append(element.extract())
+        return wrapper
 
     def _extract_title(self, soup: BeautifulSoup) -> str:
         """Extract page title from HTML."""
@@ -482,7 +573,7 @@ class PhaserDocumentParser:
 
         for selector in title_selectors:
             title_element = soup.select_one(selector)
-            if title_element:
+            if title_element and isinstance(title_element, Tag):
                 title = title_element.get_text(strip=True)
                 if title:
                     title = self._clean_title(title)
@@ -515,35 +606,44 @@ class PhaserDocumentParser:
     def _resolve_relative_urls(self, soup: BeautifulSoup, base_url: str) -> None:
         """Resolve relative URLs to absolute URLs."""
         for link in soup.find_all("a", href=True):
-            href = link["href"]
-            if href and not href.startswith(("http://", "https://", "mailto:", "#")):
+            href = link.get("href")
+            if (
+                href
+                and isinstance(href, str)
+                and not href.startswith(("http://", "https://", "mailto:", "#"))
+            ):
                 absolute_url = urljoin(base_url, href)
                 link["href"] = absolute_url
 
         for img in soup.find_all("img", src=True):
-            src = img["src"]
-            if src and not src.startswith(("http://", "https://", "data:")):
+            src = img.get("src")
+            if (
+                src
+                and isinstance(src, str)
+                and not src.startswith(("http://", "https://", "data:"))
+            ):
                 absolute_url = urljoin(base_url, src)
                 img["src"] = absolute_url
 
-    def _extract_code_blocks(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
+    def _extract_code_blocks(self, soup: TagOrSoup) -> List[Dict[str, Any]]:
         """Extract code blocks with metadata."""
-        code_blocks = []
+        code_blocks: List[Dict[str, Any]] = []
 
         for selector in self.CODE_SELECTORS:
             for element in soup.select(selector):
-                code_text = element.get_text()
-                if code_text.strip():
-                    language = self._detect_code_language(element)
+                if isinstance(element, Tag):
+                    code_text = element.get_text()
+                    if code_text.strip():
+                        language = self._detect_code_language(element)
 
-                    code_blocks.append(
-                        {
-                            "content": code_text.strip(),
-                            "language": language,
-                            "element": element,
-                            "context": self._get_code_context(element),
-                        }
-                    )
+                        code_blocks.append(
+                            {
+                                "content": code_text.strip(),
+                                "language": language,
+                                "element": element,
+                                "context": self._get_code_context(element),
+                            }
+                        )
 
         logger.debug(f"Extracted {len(code_blocks)} code blocks")
         return code_blocks
@@ -551,6 +651,9 @@ class PhaserDocumentParser:
     def _detect_code_language(self, element: Tag) -> str:
         """Detect programming language from code element."""
         classes = element.get("class", [])
+        if isinstance(classes, str):
+            classes = [classes]
+
         for class_name in classes:
             if isinstance(class_name, str):
                 class_lower = class_name.lower()
@@ -569,17 +672,34 @@ class PhaserDocumentParser:
 
     def _get_code_context(self, element: Tag) -> str:
         """Get context information for a code block."""
-        context_elements = []
+        context_elements: List[str] = []
 
         parent = element.parent
-        if parent:
+        if parent and isinstance(parent, Tag):
             current = parent.previous_sibling
             while current and len(context_elements) < 3:
                 if isinstance(current, Tag):
-                    if current.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
+                    if (
+                        hasattr(current, "name")
+                        and current.name
+                        and current.name
+                        in [
+                            "h1",
+                            "h2",
+                            "h3",
+                            "h4",
+                            "h5",
+                            "h6",
+                        ]
+                    ):
                         context_elements.append(current.get_text(strip=True))
                         break
-                    elif current.name in ["p", "div"] and current.get_text(strip=True):
+                    elif (
+                        hasattr(current, "name")
+                        and current.name
+                        and current.name in ["p", "div"]
+                        and current.get_text(strip=True)
+                    ):
                         text = current.get_text(strip=True)
                         if len(text) < 200:
                             context_elements.append(text)
@@ -603,10 +723,9 @@ class PhaserDocumentParser:
         # Prepare lists for markdown
         self._prepare_lists_for_markdown(prepared_soup)
 
-        # We'll skip adding Phaser-specific content to avoid BeautifulSoup errors
-
+        # Add language classes to code elements
         for code_element in prepared_soup.find_all(["pre", "code"]):
-            if not code_element.get("class"):
+            if isinstance(code_element, Tag) and not code_element.get("class"):
                 language = self._detect_code_language(code_element)
                 code_element["class"] = [f"language-{language}"]
 
@@ -616,49 +735,56 @@ class PhaserDocumentParser:
         """Enhance code blocks for better Markdown conversion."""
         # Find all code blocks
         for code_element in soup.find_all(["pre", "code"]):
-            # Add language class if not present
-            if not code_element.get("class"):
-                language = self._detect_code_language(code_element)
-                code_element["class"] = [f"language-{language}"]
+            if isinstance(code_element, Tag):
+                # Add language class if not present
+                if not code_element.get("class"):
+                    language = self._detect_code_language(code_element)
+                    code_element["class"] = [f"language-{language}"]
 
-            # Check for Phaser-specific content
-            code_text = code_element.get_text()
-            phaser_patterns = [
-                "Phaser.Game",
-                "this.add",
-                "this.load",
-                "this.scene",
-                "this.physics",
-                "this.anims",
-                "this.input",
-                "this.cameras",
-                "this.tweens",
-                "this.sound",
-                "Phaser.Scene",
-                "Phaser.GameObjects",
-                "Phaser.Physics",
-                "Phaser.Input",
-                "Phaser.Animations",
-            ]
-            if any(pattern in code_text for pattern in phaser_patterns):
-                code_element["data-phaser"] = "true"
+                # Check for Phaser-specific content
+                code_text = code_element.get_text()
+                phaser_patterns = [
+                    "Phaser.Game",
+                    "this.add",
+                    "this.load",
+                    "this.scene",
+                    "this.physics",
+                    "this.anims",
+                    "this.input",
+                    "this.cameras",
+                    "this.tweens",
+                    "this.sound",
+                    "Phaser.Scene",
+                    "Phaser.GameObjects",
+                    "Phaser.Physics",
+                    "Phaser.Input",
+                    "Phaser.Animations",
+                ]
+                if any(pattern in code_text for pattern in phaser_patterns):
+                    code_element["data-phaser"] = "true"
 
-            # Ensure code blocks have proper structure
-            if code_element.name == "code" and code_element.parent.name != "pre":
-                # Wrap standalone code elements in pre tags
-                pre_tag = soup.new_tag("pre")
-                code_element.wrap(pre_tag)
+                # Ensure code blocks have proper structure
+                if (
+                    code_element.name == "code"
+                    and code_element.parent
+                    and isinstance(code_element.parent, Tag)
+                    and code_element.parent.name != "pre"
+                ):
+                    # Wrap standalone code elements in pre tags
+                    pre_tag = soup.new_tag("pre")
+                    code_element.wrap(pre_tag)
 
         # Find method signatures that should be code blocks
         for method_sig in soup.select(".method-signature, .function-signature"):
-            code_text = method_sig.get_text(strip=True)
-            if code_text:
-                pre_tag = soup.new_tag("pre")
-                code_tag = soup.new_tag("code", attrs={"class": "language-javascript"})
-                code_tag.string = code_text
-                pre_tag.append(code_tag)
-                method_sig.append(pre_tag)
-                method_sig["data-method-signature"] = "true"
+            if isinstance(method_sig, Tag):
+                code_text = method_sig.get_text(strip=True)
+                if code_text:
+                    pre_tag = soup.new_tag("pre")
+                    code_tag = soup.new_tag("code", attrs={"class": "language-javascript"})
+                    code_tag.string = soup.new_string(code_text)
+                    pre_tag.append(code_tag)
+                    method_sig.append(pre_tag)
+                    method_sig["data-method-signature"] = "true"
 
     def _normalize_heading_hierarchy(self, soup: BeautifulSoup) -> None:
         """Normalize heading hierarchy for consistent Markdown output."""
@@ -668,70 +794,81 @@ class PhaserDocumentParser:
         # Find the minimum heading level used
         min_level = 6
         for heading in headings:
-            level = int(heading.name[1])
-            min_level = min(min_level, level)
+            if isinstance(heading, Tag) and heading.name:
+                level = int(heading.name[1])
+                min_level = min(min_level, level)
 
         # If minimum level is not h1, normalize the hierarchy
         if min_level > 1:
             for heading in headings:
-                current_level = int(heading.name[1])
-                new_level = max(1, current_level - min_level + 1)
-                new_tag = soup.new_tag(f"h{new_level}")
-                new_tag.string = heading.get_text()
-                heading.replace_with(new_tag)
+                if isinstance(heading, Tag) and heading.name:
+                    current_level = int(heading.name[1])
+                    new_level = max(1, current_level - min_level + 1)
+                    new_tag = soup.new_tag(f"h{new_level}")
+                    new_tag.string = soup.new_string(heading.get_text())
+                    heading.replace_with(new_tag)
 
     def _prepare_tables_for_markdown(self, soup: BeautifulSoup) -> None:
         """Prepare tables for better Markdown conversion."""
         for table in soup.find_all("table"):
-            # Ensure tables have proper structure
-            if not table.find("thead"):
-                # Check if first row can be used as header
-                first_row = table.find("tr")
-                if first_row:
-                    # Convert td to th in the header row
-                    for td in first_row.find_all("td"):
-                        th = soup.new_tag("th")
-                        th.string = td.get_text()
-                        td.replace_with(th)
+            if isinstance(table, Tag):
+                # Ensure tables have proper structure
+                if not table.find("thead"):
+                    # Check if first row can be used as header
+                    first_row = table.find("tr")
+                    if first_row and isinstance(first_row, Tag):
+                        # Convert td to th in the header row
+                        for td in first_row.find_all("td"):
+                            if isinstance(td, Tag):
+                                th = soup.new_tag("th")
+                                th.string = soup.new_string(td.get_text())
+                                td.replace_with(th)
 
-                    thead = soup.new_tag("thead")
-                    thead.append(first_row.extract())
-                    table.insert(0, thead)
+                        thead = soup.new_tag("thead")
+                        thead.append(first_row.extract())
+                        table.insert(0, thead)
 
-            # Add tbody if not present
-            if not table.find("tbody"):
-                tbody = soup.new_tag("tbody")
-                # Move all remaining rows to tbody
-                for row in table.find_all("tr"):
-                    tbody.append(row.extract())
-                table.append(tbody)
+                # Add tbody if not present
+                if not table.find("tbody"):
+                    tbody = soup.new_tag("tbody")
+                    # Move all remaining rows to tbody
+                    for row in table.find_all("tr"):
+                        if isinstance(row, Tag):
+                            tbody.append(row.extract())
+                    table.append(tbody)
 
-            # Ensure all cells have content
-            for cell in table.find_all(["td", "th"]):
-                if not cell.get_text(strip=True):
-                    cell.string = " "
+                # Ensure all cells have content
+                for cell in table.find_all(["td", "th"]):
+                    if isinstance(cell, Tag) and not cell.get_text(strip=True):
+                        cell.string = soup.new_string(" ")
 
     def _prepare_lists_for_markdown(self, soup: BeautifulSoup) -> None:
         """Prepare lists for better Markdown conversion."""
         # Fix nested lists
         for nested_list in soup.select("ul ul, ol ol, ul ol, ol ul"):
-            # Add spacing before nested lists
-            if nested_list.previous_sibling:
-                spacer = soup.new_tag("span")
-                spacer.string = " "
-                nested_list.insert_before(spacer)
+            if isinstance(nested_list, Tag):
+                # Add spacing before nested lists
+                if nested_list.previous_sibling:
+                    spacer = soup.new_tag("span")
+                    spacer.string = soup.new_string(" ")
+                    nested_list.insert_before(spacer)
 
-            # Move nested lists inside parent li if they're not already
-            parent_li = nested_list.find_previous("li")
-            if parent_li and nested_list not in parent_li.contents:
-                parent_li.append(nested_list)
+                # Move nested lists inside parent li if they're not already
+                parent_li = nested_list.find_previous("li")
+                if (
+                    parent_li
+                    and isinstance(parent_li, Tag)
+                    and hasattr(parent_li, "contents")
+                    and nested_list not in parent_li.contents
+                ):
+                    parent_li.append(nested_list)
 
         # Ensure list items have content
         for li in soup.find_all("li"):
-            if not li.get_text(strip=True):
-                li.string = " "
+            if isinstance(li, Tag) and not li.get_text(strip=True):
+                li.string = soup.new_string(" ")
 
-    def _extract_phaser_specific_content(self, soup: BeautifulSoup) -> dict[str, Any]:
+    def _extract_phaser_specific_content(self, soup: BeautifulSoup) -> Dict[str, Any]:
         """Extract Phaser-specific content patterns."""
         phaser_patterns = [
             "Phaser.Game",
@@ -751,7 +888,7 @@ class PhaserDocumentParser:
             "Phaser.Animations",
         ]
 
-        result: dict[str, str | list[dict[str, str]]] = {
+        result: Dict[str, Union[str, List[Dict[str, str]]]] = {
             "game_objects": [],
             "scenes": [],
             "physics": [],
@@ -764,74 +901,118 @@ class PhaserDocumentParser:
             "raw_content": "",
         }
 
-        phaser_content: list[dict[str, str]] = []
+        phaser_content: List[str] = []
 
         # Look for code blocks with Phaser patterns
         for code in soup.find_all(["pre", "code"]):
-            code_text = code.get_text()
-            if any(pattern in code_text for pattern in phaser_patterns):
-                # Get context (heading or paragraph before the code)
-                context = ""
-                prev = code.parent.previous_sibling
-                while prev and not context:
-                    if prev.name in ["h1", "h2", "h3", "h4", "h5", "h6", "p"]:
-                        context = prev.get_text(strip=True)
-                    prev = prev.previous_sibling
+            if isinstance(code, Tag):
+                code_text = code.get_text()
+                if any(pattern in code_text for pattern in phaser_patterns):
+                    # Get context (heading or paragraph before the code)
+                    context = ""
+                    # First try to find a heading in the parent's previous siblings
+                    current = code.parent if code.parent else None
+                    while current and not context:
+                        prev = current.previous_sibling
+                        while prev and not context:
+                            if (
+                                isinstance(prev, Tag)
+                                and hasattr(prev, "name")
+                                and prev.name in ["h1", "h2", "h3", "h4", "h5", "h6"]
+                            ):
+                                context = prev.get_text(strip=True)
+                                break
+                            elif isinstance(prev, Tag) and hasattr(prev, "name") and prev.name in ["p"] and prev.get_text(strip=True):
+                                context = prev.get_text(strip=True)
+                                break
+                            prev = prev.previous_sibling
+                        current = current.parent
+                    
+                    # Also check for headings that come before the code block in the document
+                    if not context:
+                        # Look for the nearest preceding heading in the entire document
+                        all_headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+                        # Use a simpler approach to find context without position comparison
+                        for heading in reversed(all_headings):
+                            if isinstance(heading, Tag):
+                                # Check if this heading appears before the code block in the HTML
+                                heading_text = str(heading)
+                                code_text_str = str(code)
+                                soup_str = str(soup)
+                                if soup_str.find(heading_text) < soup_str.find(code_text_str):
+                                    context = heading.get_text(strip=True)
+                                    break
 
-                # Add to appropriate category
-                code_block = {"content": code_text, "context": context}
-                result["code_blocks"].append(code_block)
+                    # Add to appropriate category
+                    code_block = {"content": code_text, "context": context}
+                    code_blocks_list = cast(List[Dict[str, str]], result["code_blocks"])
+                    code_blocks_list.append(code_block)
 
-                # Categorize by content
-                if (
-                    "this.add" in code_text
-                    or "Phaser.GameObjects" in code_text
-                    or "sprite" in code_text.lower()
-                ):
-                    result["game_objects"].append(code_block)
-                    # Add content to the code block for testing
-                    code_block["content_text"] = "this.add.sprite"
-                if (
-                    "this.scene" in code_text
-                    or "Phaser.Scene" in code_text
-                    or "scene" in code_text.lower()
-                ):
-                    result["scenes"].append(code_block)
-                if (
-                    "this.physics" in code_text
-                    or "Phaser.Physics" in code_text
-                    or "physics" in code_text.lower()
-                ):
-                    result["physics"].append(code_block)
-                if (
-                    "this.input" in code_text
-                    or "Phaser.Input" in code_text
-                    or "input" in code_text.lower()
-                ):
-                    result["input"].append(code_block)
-                if (
-                    "pointerdown" in code_text
-                    or "click" in code_text.lower()
-                    or "touch" in code_text.lower()
-                ):
-                    result["input_handlers"].append(code_block)
-                if (
-                    "this.anims" in code_text
-                    or "Phaser.Animations" in code_text
-                    or "animation" in code_text.lower()
-                ):
-                    result["animations"].append(code_block)
-                if "tutorial" in code_text.lower() or "guide" in code_text.lower():
-                    result["tutorials"].append(code_block)
+                    # Categorize by content
+                    if (
+                        "this.add" in code_text
+                        or "Phaser.GameObjects" in code_text
+                        or "sprite" in code_text.lower()
+                    ):
+                        game_objects_list = cast(
+                            List[Dict[str, str]], result["game_objects"]
+                        )
+                        game_objects_list.append(code_block)
+                    if (
+                        "this.scene" in code_text
+                        or "Phaser.Scene" in code_text
+                        or "scene" in code_text.lower()
+                    ):
+                        scenes_list = cast(List[Dict[str, str]], result["scenes"])
+                        scenes_list.append(code_block)
+                    if (
+                        "this.physics" in code_text
+                        or "Phaser.Physics" in code_text
+                        or "physics" in code_text.lower()
+                    ):
+                        physics_list = cast(List[Dict[str, str]], result["physics"])
+                        physics_list.append(code_block)
+                    if (
+                        "this.input" in code_text
+                        or "Phaser.Input" in code_text
+                        or "input" in code_text.lower()
+                    ):
+                        input_list = cast(List[Dict[str, str]], result["input"])
+                        input_list.append(code_block)
+                    if (
+                        "pointerdown" in code_text
+                        or "click" in code_text.lower()
+                        or "touch" in code_text.lower()
+                    ):
+                        input_handlers_list = cast(
+                            List[Dict[str, str]], result["input_handlers"]
+                        )
+                        input_handlers_list.append(code_block)
+                    if (
+                        "this.anims" in code_text
+                        or "Phaser.Animations" in code_text
+                        or "animation" in code_text.lower()
+                    ):
+                        animations_list = cast(List[Dict[str, str]], result["animations"])
+                        animations_list.append(code_block)
+                    if (
+                        "tutorial" in code_text.lower()
+                        or "guide" in code_text.lower()
+                        or "tutorial" in context.lower()
+                        or "guide" in context.lower()
+                    ):
+                        tutorials_list = cast(List[Dict[str, str]], result["tutorials"])
+                        tutorials_list.append(code_block)
 
-                # Add to examples if it looks like a complete code example
-                if len(code_text.strip().split("\n")) > 3:
-                    result["examples"].append(code_block)
+                    # Add to examples if it looks like a complete code example
+                    if len(code_text.strip().split("\n")) > 3:
+                        examples_list = cast(List[Dict[str, str]], result["examples"])
+                        examples_list.append(code_block)
 
-                # Add to raw content
-                if context:
-                    phaser_content.append(f"<h4>{context}</h4>")
-                phaser_content.append(str(code))
+                    # Add to raw content
+                    if context:
+                        phaser_content.append(f"<h4>{context}</h4>")
+                    phaser_content.append(str(code))
 
         result["raw_content"] = "\n".join(phaser_content) if phaser_content else ""
         return result
@@ -873,7 +1054,7 @@ class PhaserDocumentParser:
         content = re.sub(r"\[([^\]]+)\]\(\s*\)", r"\1", content)
 
         # Fix links with spaces in URL
-        def fix_url_spaces(match):
+        def fix_url_spaces(match: Match[str]) -> str:
             text = match.group(1)
             url = match.group(2).strip()
             url = url.replace(" ", "%20")
@@ -909,7 +1090,7 @@ class PhaserDocumentParser:
         )
 
         # Ensure code blocks have proper language tags
-        def add_language_to_code_block(match):
+        def add_language_to_code_block(match: Match[str]) -> str:
             code_content = match.group(1)
             if any(
                 keyword in code_content.lower()

@@ -324,30 +324,41 @@ this.input.on('pointerdown', handleClick);
 
         # Check game objects
         assert len(phaser_content["game_objects"]) > 0
-        assert any("this.add.sprite" in item for item in phaser_content["game_objects"])
+        assert any(
+            "this.add.sprite" in item["content"]
+            for item in phaser_content["game_objects"]
+        )
 
         # Check physics
         assert len(phaser_content["physics"]) > 0
-        assert any("setVelocity" in item for item in phaser_content["physics"])
+        assert any(
+            "setVelocity" in item["content"] for item in phaser_content["physics"]
+        )
 
         # Check animations
         assert len(phaser_content["animations"]) > 0
-        assert any("this.anims" in item for item in phaser_content["animations"])
+        assert any(
+            "this.anims" in item["content"] for item in phaser_content["animations"]
+        )
 
         # Check input handlers
         assert len(phaser_content["input_handlers"]) > 0
         assert any(
-            "setInteractive" in item for item in phaser_content["input_handlers"]
+            "setInteractive" in item["content"]
+            for item in phaser_content["input_handlers"]
         )
 
         # Check tutorials
         assert len(phaser_content["tutorials"]) > 0
-        assert "Input Handling Tutorial" in phaser_content["tutorials"]
+        assert any(
+            "Input Handling Tutorial" in item["context"]
+            for item in phaser_content["tutorials"]
+        )
 
         # Check examples
         assert len(phaser_content["examples"]) > 0
         assert any(
-            "sprite" in example["code"].lower()
+            "sprite" in example["content"].lower()
             for example in phaser_content["examples"]
         )
 
@@ -742,8 +753,11 @@ class TestParserWithSampleFiles:
         assert len(phaser_content["examples"]) > 0
 
         # Check for specific Phaser patterns
-        assert any("this.add.sprite" in item for item in phaser_content["game_objects"])
-        assert any("setBounce" in item for item in phaser_content["physics"])
+        assert any(
+            "this.add.sprite" in item["content"]
+            for item in phaser_content["game_objects"]
+        )
+        assert any("setBounce" in item["content"] for item in phaser_content["physics"])
 
     def test_parse_api_html_file(self, sample_api_html):
         """Test parsing of sample API HTML file."""
@@ -975,25 +989,25 @@ class TestParserWithSampleFiles:
 
         # Test game objects extraction
         game_objects = phaser_content["game_objects"]
-        assert any("this.add.sprite" in item for item in game_objects)
-        assert any("this.add.image" in item for item in game_objects)
+        assert any("this.add.sprite" in item["content"] for item in game_objects)
+        assert any("this.add.image" in item["content"] for item in game_objects)
 
         # Test physics extraction
         physics = phaser_content["physics"]
-        assert any("setBounce" in item for item in physics)
-        assert any("setCollideWorldBounds" in item for item in physics)
-        assert any("setVelocity" in item for item in physics)
+        assert any("setBounce" in item["content"] for item in physics)
+        assert any("setCollideWorldBounds" in item["content"] for item in physics)
+        assert any("setVelocity" in item["content"] for item in physics)
 
         # Test animations extraction
         animations = phaser_content["animations"]
-        assert any("this.anims.create" in item for item in animations)
-        assert any(".play(" in item for item in animations)
+        assert any("this.anims.create" in item["content"] for item in animations)
+        assert any(".play(" in item["content"] for item in animations)
 
         # Test input handlers extraction
         input_handlers = phaser_content["input_handlers"]
-        assert any("setInteractive" in item for item in input_handlers)
+        assert any("setInteractive" in item["content"] for item in input_handlers)
         # Check if pointer events are captured (may be in different format)
-        input_text = " ".join(input_handlers)
+        input_text = " ".join(item["content"] for item in input_handlers)
         assert "setInteractive" in input_text
 
     def test_unwanted_elements_removal(self, sample_tutorial_html):
