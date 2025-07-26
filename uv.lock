@@ -523,6 +523,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "commitizen" },
+    { name = "coverage" },
     { name = "mdformat" },
     { name = "mdformat-frontmatter" },
     { name = "mdformat-gfm" },
@@ -538,6 +539,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "coverage" },
     { name = "mdformat" },
     { name = "mdformat-frontmatter" },
     { name = "mdformat-gfm" },
@@ -548,6 +550,7 @@ dev = [
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
     { name = "commitizen", marker = "extra == 'dev'", specifier = ">=3.0.0" },
+    { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "loguru", specifier = ">=0.7.0" },
     { name = "markdownify", specifier = ">=0.11.0" },
@@ -569,6 +572,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "coverage", specifier = ">=7.9.2" },
     { name = "mdformat", specifier = ">=0.7.22" },
     { name = "mdformat-frontmatter", specifier = ">=2.0.8" },
     { name = "mdformat-gfm", specifier = ">=0.4.1" },

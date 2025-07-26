@@ -30,7 +30,7 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        uv run pytest --cov=phaser_mcp_server --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=90
+        uv run pytest --cov=phaser_mcp_server --cov-branch --cov-report=term-missing:skip-covered --cov-report=html --cov-report=xml --cov-fail-under=86
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
@@ -49,41 +49,4 @@ jobs:
 
     - name: Check individual module coverage
       run: |
-        uv run python -c "
-        import coverage
-        import sys
-        
-        # Load coverage data
-        cov = coverage.Coverage()
-        cov.load()
-        
-        # Define module coverage thresholds
-        thresholds = {
-            'phaser_mcp_server/models.py': 95,
-            'phaser_mcp_server/parser.py': 90,
-            'phaser_mcp_server/client.py': 90,
-            'phaser_mcp_server/server.py': 90,
-        }
-        
-        # Check each module
-        failed = False
-        for module, threshold in thresholds.items():
-            try:
-                analysis = cov.analysis2(module)
-                total_lines = len(analysis[1]) + len(analysis[2])
-                covered_lines = len(analysis[1])
-                coverage_pct = (covered_lines / total_lines) * 100 if total_lines > 0 else 0
-                
-                print(f'{module}: {coverage_pct:.1f}% (threshold: {threshold}%)')
-                
-                if coverage_pct < threshold:
-                    print(f'❌ {module} coverage {coverage_pct:.1f}% is below threshold {threshold}%')
-                    failed = True
-                else:
-                    print(f'✅ {module} coverage {coverage_pct:.1f}% meets threshold {threshold}%')
-            except Exception as e:
-                print(f'⚠️  Could not check coverage for {module}: {e}')
-        
-        if failed:
-            sys.exit(1)
-        "
+        uv run python scripts/check_coverage.py

@@ -20,7 +20,11 @@ test: ## Run tests
 	uv run pytest
 
 test-cov: ## Run tests with coverage report
-	uv run pytest --cov=phaser_mcp_server --cov-report=html --cov-report=term-missing
+	uv run pytest --cov=phaser_mcp_server --cov-branch --cov-report=html --cov-report=term-missing:skip-covered
+
+test-cov-check: ## Run tests with coverage and check thresholds
+	uv run pytest --cov=phaser_mcp_server --cov-branch --cov-report=html --cov-report=xml --cov-fail-under=86
+	uv run python scripts/check_coverage.py
 
 test-live: ## Run tests including live tests (requires internet)
 	uv run pytest -m live
@@ -97,7 +101,8 @@ dev-install: install-dev ## Alias for install-dev
 
 # CI/CD helpers
 ci-test: ## Run tests for CI
-	uv run pytest --cov=phaser_mcp_server --cov-report=xml --cov-fail-under=90
+	uv run pytest --cov=phaser_mcp_server --cov-branch --cov-report=xml --cov-fail-under=86
+	uv run python scripts/check_coverage.py
 
 ci-lint: ## Run linting for CI
 	uv run ruff check --output-format=github

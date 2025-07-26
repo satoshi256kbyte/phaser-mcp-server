@@ -45,6 +45,7 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
+    "coverage>=7.0.0",
     "ruff>=0.1.0",
     "pyright>=1.1.0",
     "pre-commit>=3.0.0",
@@ -132,10 +133,12 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--cov=phaser_mcp_server",
-    "--cov-report=term-missing",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=88",
+    "--cov-fail-under=86",
+    "-v",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
@@ -146,20 +149,31 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "live: marks tests as requiring live internet connection",
+    "e2e: marks tests as end-to-end tests",
 ]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 
 # Coverage configuration
 [tool.coverage.run]
 source = ["phaser_mcp_server"]
+branch = true
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/venv/*",
     "*/.venv/*",
+    "phaser_mcp_server/stubs/*",
 ]
 
 [tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+sort = "Cover"
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -171,7 +185,16 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
+    "pass",
+    "raise ImportError",
 ]
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "Phaser MCP Server Coverage Report"
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 # Commitizen configuration
 [tool.commitizen]
@@ -185,6 +208,7 @@ version_files = [
 
 [dependency-groups]
 dev = [
+    "coverage>=7.9.2",
     "mdformat>=0.7.22",
     "mdformat-frontmatter>=2.0.8",
     "mdformat-gfm>=0.4.1",

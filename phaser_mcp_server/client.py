@@ -768,7 +768,8 @@ class PhaserDocsClient:
                 title = title_match.group(1).strip()
                 # Clean up HTML entities and whitespace
                 title = re.sub(r"\s+", " ", title)
-                return title
+                if title:  # Only return if not empty
+                    return title
         except Exception as e:
             logger.warning(f"Failed to extract title: {e}")
 

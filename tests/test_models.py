@@ -199,6 +199,181 @@ class TestDocumentationPage:
         # Should count 4 words despite irregular spacing
         assert page.word_count == 4
 
+    def test_word_count_with_various_content_types(self):
+        """Test word count calculation with various content types."""
+        test_cases = [
+            # Markdown content with headers (simple split counts all tokens)
+            (
+                "# Header\n\n## Subheader\n\nContent here",
+                6,
+            ),  # #, Header, ##, Subheader, Content, here
+            # Code blocks
+            (
+                "```python\nprint('hello')\n```\nSome text",
+                5,
+            ),  # ```python, print('hello'), ```, Some, text
+            # HTML-like content (split by whitespace)
+            (
+                "<p>Paragraph with <strong>bold</strong> text</p>",
+                4,
+            ),  # <p>Paragraph, with, <strong>bold</strong>, text</p>
+            # Mixed punctuation
+            ("Hello, world! How are you? I'm fine.", 7),
+            # Numbers and special characters
+            ("Version 3.14.0 supports @decorators and #hashtags", 6),
+            # Single word
+            ("Word", 1),
+            # Only punctuation and symbols
+            ("!@#$%^&*()", 1),
+            # Unicode characters
+            ("こんにちは world 世界", 3),
+            # URLs and email addresses
+            ("Visit https://example.com or email test@example.com", 5),
+            # Hyphenated words (treated as single words by split)
+            (
+                "Well-known state-of-the-art solution",
+                3,
+            ),  # Well-known, state-of-the-art, solution
+            # Contractions
+            ("Don't can't won't shouldn't", 4),
+        ]
+
+        for content, expected_count in test_cases:
+            page = DocumentationPage(
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+                content=content,
+            )
+            assert page.word_count == expected_count, f"Failed for content: {content!r}"
+
+    def test_url_validation_edge_cases(self):
+        """Test URL validation with various edge cases."""
+        # Test URLs with query parameters and fragments (without explicit ports)
+        valid_edge_case_urls = [
+            "https://docs.phaser.io/phaser/test?param=value",
+            "https://docs.phaser.io/phaser/test#section",
+            "https://docs.phaser.io/phaser/test?param=value&other=test#section",
+            "https://docs.phaser.io/phaser/test/",  # Trailing slash
+            "https://docs.phaser.io/phaser/test/../other",  # Path traversal (allowed in URL)
+            "https://docs.phaser.io/phaser/test%20with%20spaces",  # URL encoded
+        ]
+
+        for url in valid_edge_case_urls:
+            page = DocumentationPage(url=url, title="Test", content="Test content")
+            assert page.url == url
+
+        # Test invalid edge cases
+        invalid_edge_case_urls = [
+            "https://docs.phaser.io.evil.com/phaser/test",  # Subdomain attack
+            "https://evil.docs.phaser.io/phaser/test",  # Subdomain attack
+            "https://docs-phaser.io/phaser/test",  # Similar domain
+            "https://docs.phaser.io.com/phaser/test",  # Wrong TLD
+            "https://docss.phaser.io/phaser/test",  # Typosquatting
+            "https://docs.phaser.io@evil.com/phaser/test",  # URL with userinfo
+            "https://docs.phaser.io:443/phaser/test",  # Explicit port (not allowed by current validation)
+        ]
+
+        for url in invalid_edge_case_urls:
+            with pytest.raises(ValidationError) as exc_info:
+                DocumentationPage(url=url, title="Test", content="Test content")
+            assert "URL must be from allowed domains" in str(exc_info.value)
+
+    def test_title_cleaning_edge_cases(self):
+        """Test title cleaning with various edge cases."""
+        test_cases = [
+            # Single suffix removal (only removes one suffix at a time)
+            ("API Reference - Phaser", "API Reference"),
+            ("Getting Started | Phaser Documentation", "Getting Started"),
+            ("Tutorial :: Phaser Documentation", "Tutorial"),
+            # Case sensitivity
+            ("Title - phaser", "Title - phaser"),  # Should not match case-sensitive
+            ("Title - PHASER", "Title - PHASER"),  # Should not match case-sensitive
+            # Partial matches (should not be removed)
+            ("Phaser Game Engine", "Phaser Game Engine"),
+            ("Documentation for Phaser", "Documentation for Phaser"),
+            # Unicode and special characters
+            ("Título con acentos - Phaser", "Título con acentos"),
+            ("Title with émojis 🎮 - Phaser", "Title with émojis 🎮"),
+            # Very long titles
+            ("A" * 400 + " - Phaser", "A" * 400),
+            # Cases that don't match exact suffixes (so they're not removed)
+            ("- Phaser", "- Phaser"),  # Doesn't match " - Phaser" exactly
+            (
+                "| Phaser Documentation",
+                "| Phaser Documentation",
+            ),  # Doesn't match " | Phaser Documentation" exactly
+            # Multiple spaces and formatting
+            ("  Title   with   spaces  - Phaser  ", "Title   with   spaces"),
+            # HTML entities (if they somehow get through)
+            ("Title &amp; More - Phaser", "Title &amp; More"),
+        ]
+
+        for input_title, expected_title in test_cases:
+            page = DocumentationPage(
+                url="https://docs.phaser.io/phaser/test",
+                title=input_title,
+                content="Test content",
+            )
+            assert page.title == expected_title, f"Failed for title: {input_title!r}"
+
+    def test_url_validation_malformed_urls(self):
+        """Test URL validation with malformed URLs."""
+        # Test URLs that will fail domain validation
+        malformed_urls = [
+            "https://invalid-domain.com/test",  # Invalid domain
+            "http://malicious.com/test",  # Invalid domain
+            "ftp://docs.phaser.io/test",  # Invalid scheme
+            "javascript:alert('xss')",  # Invalid scheme
+            "",  # Empty URL (will fail min_length validation)
+        ]
+
+        for url in malformed_urls:
+            with pytest.raises(ValidationError):
+                DocumentationPage(url=url, title="Test", content="Test content")
+
+    def test_content_type_validation(self):
+        """Test content type field validation."""
+        valid_content_types = [
+            "text/html",
+            "text/plain",
+            "application/json",
+            "text/markdown",
+            "application/xml",
+        ]
+
+        for content_type in valid_content_types:
+            page = DocumentationPage(
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+                content="Test content",
+                content_type=content_type,
+            )
+            assert page.content_type == content_type
+
+    def test_last_modified_datetime_handling(self):
+        """Test last_modified datetime field handling."""
+        from datetime import timezone
+
+        # Test with timezone-aware datetime
+        dt_with_tz = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        page = DocumentationPage(
+            url="https://docs.phaser.io/phaser/test",
+            title="Test",
+            content="Test content",
+            last_modified=dt_with_tz,
+        )
+        assert page.last_modified == dt_with_tz
+
+        # Test with naive datetime
+        dt_naive = datetime(2024, 1, 15, 10, 30, 0)
+        page = DocumentationPage(
+            url="https://docs.phaser.io/phaser/test",
+            title="Test",
+            content="Test content",
+            last_modified=dt_naive,
+        )
+        assert page.last_modified == dt_naive
+
 
 class TestSearchResult:
     """Test cases for SearchResult model."""
@@ -337,6 +512,236 @@ class TestSearchResult:
         )
 
         assert result.snippet is None
+
+    def test_snippet_cleaning_various_formats(self):
+        """Test snippet cleaning with various input formats."""
+        test_cases = [
+            # HTML-like content (tags are preserved, only whitespace is normalized)
+            ("<p>This is a paragraph</p>", "<p>This is a paragraph</p>"),
+            # Multiple line breaks and spaces
+            ("Line1\n\n\nLine2\r\n\r\nLine3", "Line1 Line2 Line3"),
+            # Mixed whitespace characters
+            ("Word1\t\t\tWord2   \r\n   Word3", "Word1 Word2 Word3"),
+            # Leading and trailing whitespace
+            ("   Content in the middle   ", "Content in the middle"),
+            # Special characters and punctuation
+            ("Hello, world! How are you?", "Hello, world! How are you?"),
+            # Unicode characters
+            ("こんにちは world 世界", "こんにちは world 世界"),
+            # Numbers and symbols
+            ("Version 3.14.0 costs $29.99", "Version 3.14.0 costs $29.99"),
+            # Code-like content
+            ("function() { return true; }", "function() { return true; }"),
+            # URLs in snippets
+            (
+                "Visit https://example.com for more",
+                "Visit https://example.com for more",
+            ),
+            # Very long content with spaces
+            ("A" * 100 + "   " + "B" * 100, "A" * 100 + " " + "B" * 100),
+            # Content with quotes
+            ("\"This is quoted\" and 'this too'", "\"This is quoted\" and 'this too'"),
+            # Empty variations
+            ("", None),
+            ("   ", None),
+            ("\n\n\n", None),
+            ("\t\t\t", None),
+            ("\r\n\r\n", None),
+        ]
+
+        for input_snippet, expected_snippet in test_cases:
+            result = SearchResult(
+                rank_order=1,
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+                snippet=input_snippet,
+            )
+            assert (
+                result.snippet == expected_snippet
+            ), f"Failed for snippet: {input_snippet!r}"
+
+    def test_url_validation_edge_cases_search(self):
+        """Test URL validation edge cases for SearchResult."""
+        # Valid edge case URLs
+        valid_urls = [
+            "https://docs.phaser.io/phaser/test?query=value",
+            "https://docs.phaser.io/phaser/test#anchor",
+            "https://docs.phaser.io/phaser/test?a=1&b=2#section",
+            "https://phaser.io/examples/v3.70.0/game-objects/sprites",
+            "https://www.phaser.io/tutorials/getting-started",
+            "http://docs.phaser.io/api/Phaser.Scene",  # HTTP should be allowed
+            "https://docs.phaser.io/phaser/test/",  # Trailing slash
+            "https://docs.phaser.io:443/phaser/test",  # Explicit HTTPS port
+            "http://docs.phaser.io:80/phaser/test",  # Explicit HTTP port
+            "https://docs.phaser.io/phaser/test%20encoded",  # URL encoded
+        ]
+
+        for url in valid_urls:
+            result = SearchResult(
+                rank_order=1,
+                url=url,
+                title="Test",
+            )
+            assert result.url == url
+
+        # Invalid URLs (malformed or invalid schemes)
+        invalid_urls = [
+            "ftp://docs.phaser.io/test",  # Invalid scheme
+            "javascript:void(0)",  # Invalid scheme
+            "",  # Empty URL (will fail min_length validation)
+            "not-a-url",  # Not a URL at all
+        ]
+
+        for url in invalid_urls:
+            with pytest.raises(ValidationError):
+                SearchResult(rank_order=1, url=url, title="Test")
+
+    def test_relevance_score_edge_cases(self):
+        """Test relevance score validation with edge cases."""
+        # Test boundary values
+        boundary_scores = [0.0, 1.0, 0.000001, 0.999999]
+
+        for score in boundary_scores:
+            result = SearchResult(
+                rank_order=1,
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+                relevance_score=score,
+            )
+            assert result.relevance_score == score
+
+        # Test invalid scores
+        invalid_scores = [
+            -0.000001,  # Just below 0
+            1.000001,  # Just above 1
+            float("inf"),  # Infinity
+            float("-inf"),  # Negative infinity
+            float("nan"),  # NaN
+            -999.0,  # Very negative
+            999.0,  # Very positive
+        ]
+
+        for score in invalid_scores:
+            with pytest.raises(ValidationError) as exc_info:
+                SearchResult(
+                    rank_order=1,
+                    url="https://docs.phaser.io/phaser/test",
+                    title="Test",
+                    relevance_score=score,
+                )
+            error_msg = str(exc_info.value)
+            # Check for appropriate error message
+            assert any(
+                phrase in error_msg
+                for phrase in [
+                    "less than or equal to 1",
+                    "greater than or equal to 0",
+                    "ensure this value",
+                    "Input should be",
+                ]
+            )
+
+    def test_rank_order_edge_cases(self):
+        """Test rank order validation with edge cases."""
+        # Test valid rank orders
+        valid_ranks = [1, 2, 10, 100, 1000, 999999]
+
+        for rank in valid_ranks:
+            result = SearchResult(
+                rank_order=rank,
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+            )
+            assert result.rank_order == rank
+
+        # Test invalid rank orders
+        invalid_ranks = [0, -1, -10, -999]
+
+        for rank in invalid_ranks:
+            with pytest.raises(ValidationError) as exc_info:
+                SearchResult(
+                    rank_order=rank,
+                    url="https://docs.phaser.io/phaser/test",
+                    title="Test",
+                )
+            assert "greater than or equal to 1" in str(exc_info.value)
+
+    def test_search_result_title_edge_cases(self):
+        """Test SearchResult title validation edge cases."""
+        # Test title length limits
+        max_length_title = "A" * 500  # Should be valid
+        result = SearchResult(
+            rank_order=1,
+            url="https://docs.phaser.io/phaser/test",
+            title=max_length_title,
+        )
+        assert result.title == max_length_title
+
+        # Test title too long
+        too_long_title = "A" * 501
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(
+                rank_order=1,
+                url="https://docs.phaser.io/phaser/test",
+                title=too_long_title,
+            )
+        assert "at most 500 characters" in str(exc_info.value)
+
+        # Test empty title
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(
+                rank_order=1,
+                url="https://docs.phaser.io/phaser/test",
+                title="",
+            )
+        assert "at least 1 character" in str(exc_info.value)
+
+    def test_search_result_url_length_validation(self):
+        """Test SearchResult URL length validation."""
+        # Test maximum valid URL length
+        base_url = "https://docs.phaser.io/phaser/"
+        max_path = "a" * (2048 - len(base_url))
+        max_url = base_url + max_path
+
+        result = SearchResult(
+            rank_order=1,
+            url=max_url,
+            title="Test",
+        )
+        assert result.url == max_url
+
+        # Test URL too long
+        too_long_url = base_url + "a" * (2048 - len(base_url) + 1)
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(
+                rank_order=1,
+                url=too_long_url,
+                title="Test",
+            )
+        assert "at most 2048 characters" in str(exc_info.value)
+
+    def test_snippet_max_length_validation(self):
+        """Test snippet maximum length validation."""
+        # Test maximum valid snippet length
+        max_snippet = "A" * 1000
+        result = SearchResult(
+            rank_order=1,
+            url="https://docs.phaser.io/phaser/test",
+            title="Test",
+            snippet=max_snippet,
+        )
+        assert result.snippet == max_snippet
+
+        # Test snippet too long
+        too_long_snippet = "A" * 1001
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(
+                rank_order=1,
+                url="https://docs.phaser.io/phaser/test",
+                title="Test",
+                snippet=too_long_snippet,
+            )
+        assert "at most 1000 characters" in str(exc_info.value)
 
 
 class TestApiReference:
@@ -594,6 +999,750 @@ class TestApiReference:
         assert api_ref.methods == ["method1", "method2"]
         assert api_ref.properties == ["prop1"]
         assert api_ref.examples == ["example1"]
+
+    def test_class_name_validation_various_formats(self):
+        """Test class name validation with various formats."""
+        # Test valid class name formats
+        valid_class_names = [
+            "SimpleClass",
+            "Phaser.Scene",
+            "Phaser.GameObjects.Sprite",
+            "Phaser.Sound.WebAudioSoundManager",
+            "Class_With_Underscores",
+            "Class123",
+            "Audio3D",
+            "HTML5AudioSoundManager",
+            "A",  # Single character
+            "A.B.C.D.E.F",  # Deep namespace
+            "Class.With.Numbers123.AndMore",
+            "Phaser.Cameras.Scene2D.Camera",
+            "Phaser.Physics.Arcade.Body",
+        ]
+
+        for class_name in valid_class_names:
+            api_ref = ApiReference(
+                class_name=class_name,
+                url="https://docs.phaser.io/api/test",
+                description="Test description",
+            )
+            assert api_ref.class_name == class_name
+
+        # Test invalid class name formats
+        invalid_class_names = [
+            "Class-Name",  # Hyphen not allowed
+            "Class Name",  # Space not allowed
+            "Class@Name",  # @ symbol not allowed
+            "Class#Name",  # Hash not allowed
+            "Class$Name",  # Dollar sign not allowed
+            "Class%Name",  # Percent not allowed
+            "Class&Name",  # Ampersand not allowed
+            "Class*Name",  # Asterisk not allowed
+            "Class+Name",  # Plus not allowed
+            "Class=Name",  # Equals not allowed
+            "Class[Name]",  # Brackets not allowed
+            "Class{Name}",  # Braces not allowed
+            "Class(Name)",  # Parentheses not allowed
+            "Class<Name>",  # Angle brackets not allowed
+            "Class/Name",  # Slash not allowed
+            "Class\\Name",  # Backslash not allowed
+            "Class|Name",  # Pipe not allowed
+            "Class?Name",  # Question mark not allowed
+            "Class!Name",  # Exclamation not allowed
+            "Class,Name",  # Comma not allowed
+            "Class;Name",  # Semicolon not allowed
+            "Class:Name",  # Colon not allowed
+            'Class"Name',  # Quote not allowed
+            "Class'Name",  # Apostrophe not allowed
+        ]
+
+        for class_name in invalid_class_names:
+            with pytest.raises(ValidationError) as exc_info:
+                ApiReference(
+                    class_name=class_name,
+                    url="https://docs.phaser.io/api/test",
+                    description="Test description",
+                )
+            assert "Class name contains invalid characters" in str(exc_info.value)
+
+    def test_methods_properties_list_validation_edge_cases(self):
+        """Test methods and properties list validation with edge cases."""
+        # Test with various whitespace scenarios
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            methods=[
+                "method1",
+                "  method2  ",  # Leading/trailing spaces
+                "\tmethod3\t",  # Tabs
+                "\nmethod4\n",  # Newlines
+                "\r\nmethod5\r\n",  # Carriage returns
+                "method6",
+                "",  # Empty string
+                "   ",  # Only spaces
+                "\t\n\r",  # Only whitespace
+                "method7",
+            ],
+            properties=[
+                "prop1",
+                "  prop2  ",
+                "",
+                "prop3",
+                "\t\t",
+                "prop4",
+                "   prop5   ",
+            ],
+        )
+
+        # Should clean and deduplicate
+        expected_methods = [
+            "method1",
+            "method2",
+            "method3",
+            "method4",
+            "method5",
+            "method6",
+            "method7",
+        ]
+        expected_properties = ["prop1", "prop2", "prop3", "prop4", "prop5"]
+
+        assert api_ref.methods == expected_methods
+        assert api_ref.properties == expected_properties
+
+    def test_methods_properties_deduplication_complex(self):
+        """Test complex deduplication scenarios for methods and properties."""
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            methods=[
+                "method1",
+                "method2",
+                "method1",  # Duplicate
+                "  method2  ",  # Duplicate with spaces
+                "method3",
+                "method1",  # Another duplicate
+                "method4",
+                "method2",  # Another duplicate
+                "method5",
+            ],
+            properties=[
+                "prop1",
+                "prop2",
+                "prop1",  # Duplicate
+                "  prop1  ",  # Duplicate with spaces (should be treated as same)
+                "prop3",
+                "prop2",  # Duplicate
+            ],
+        )
+
+        # Should preserve order of first occurrence and remove duplicates
+        assert api_ref.methods == [
+            "method1",
+            "method2",
+            "method3",
+            "method4",
+            "method5",
+        ]
+        assert api_ref.properties == ["prop1", "prop2", "prop3"]
+
+    def test_examples_list_validation_edge_cases(self):
+        """Test examples list validation with edge cases."""
+        # Test with various code example formats
+        examples_input = [
+            "const sprite = new Sprite();",
+            "",  # Empty example
+            "  sprite.setPosition(100, 100);  ",  # With spaces
+            "   ",  # Only spaces
+            """
+            // Multi-line example
+            function createSprite() {
+                return new Sprite();
+            }
+            """,  # Multi-line with leading/trailing whitespace
+            "\t\tsprite.destroy();\t\t",  # With tabs
+            "sprite.update();",
+            "",  # Another empty
+            "// Final example\nsprite.render();",
+        ]
+
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            examples=examples_input,
+        )
+
+        # Should clean and filter out empty examples
+        expected_examples = [
+            "const sprite = new Sprite();",
+            "sprite.setPosition(100, 100);",
+            """// Multi-line example
+            function createSprite() {
+                return new Sprite();
+            }""",
+            "sprite.destroy();",
+            "sprite.update();",
+            "// Final example\nsprite.render();",
+        ]
+
+        assert len(api_ref.examples) == len(expected_examples)
+        for i, example in enumerate(api_ref.examples):
+            assert example.strip() == expected_examples[i].strip()
+
+    def test_parent_class_validation_edge_cases(self):
+        """Test parent class validation with edge cases."""
+        # Test valid parent class names
+        valid_parent_classes = [
+            "GameObject",
+            "Phaser.GameObjects.GameObject",
+            "Base_Class",
+            "Parent123",
+            "A",  # Single character
+            None,  # None should be allowed
+        ]
+
+        for parent_class in valid_parent_classes:
+            api_ref = ApiReference(
+                class_name="Test",
+                url="https://docs.phaser.io/api/test",
+                description="Test description",
+                parent_class=parent_class,
+            )
+            assert api_ref.parent_class == parent_class
+
+        # Test parent class length validation
+        long_parent = "A" * 201
+        with pytest.raises(ValidationError) as exc_info:
+            ApiReference(
+                class_name="Test",
+                url="https://docs.phaser.io/api/test",
+                description="Test description",
+                parent_class=long_parent,
+            )
+        assert "at most 200 characters" in str(exc_info.value)
+
+        # Test maximum valid length
+        max_parent = "A" * 200
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            parent_class=max_parent,
+        )
+        assert api_ref.parent_class == max_parent
+
+    def test_namespace_validation_edge_cases(self):
+        """Test namespace validation with edge cases."""
+        # Test valid namespace formats
+        valid_namespaces = [
+            "Phaser",
+            "Phaser.GameObjects",
+            "Phaser.Physics.Arcade",
+            "Phaser.Sound.WebAudio",
+            "Custom_Namespace",
+            "Namespace123",
+            "A",  # Single character
+            None,  # None should be allowed
+        ]
+
+        for namespace in valid_namespaces:
+            api_ref = ApiReference(
+                class_name="Test",
+                url="https://docs.phaser.io/api/test",
+                description="Test description",
+                namespace=namespace,
+            )
+            assert api_ref.namespace == namespace
+
+        # Test namespace length validation
+        long_namespace = "A" * 201
+        with pytest.raises(ValidationError) as exc_info:
+            ApiReference(
+                class_name="Test",
+                url="https://docs.phaser.io/api/test",
+                description="Test description",
+                namespace=long_namespace,
+            )
+        assert "at most 200 characters" in str(exc_info.value)
+
+        # Test maximum valid length
+        max_namespace = "A" * 200
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            namespace=max_namespace,
+        )
+        assert api_ref.namespace == max_namespace
+
+    def test_api_url_validation_comprehensive(self):
+        """Test comprehensive API URL validation scenarios."""
+        # Test valid API URLs with various patterns
+        valid_api_urls = [
+            "https://docs.phaser.io/api/Phaser.Scene",
+            "https://docs.phaser.io/api/Phaser.GameObjects.Sprite",
+            "https://docs.phaser.io/api/Phaser.Physics.Arcade.Body",
+            "https://docs.phaser.io/api/Phaser.Sound.WebAudioSoundManager",
+            "http://docs.phaser.io/api/Phaser.Cameras.Scene2D.Camera",
+            "https://docs.phaser.io/api/Phaser.Input.Keyboard.KeyboardPlugin",
+            "https://docs.phaser.io/api/test?param=value",  # With query params
+            "https://docs.phaser.io/api/test#section",  # With fragment
+        ]
+
+        for url in valid_api_urls:
+            api_ref = ApiReference(
+                class_name="Test",
+                url=url,
+                description="Test description",
+            )
+            assert api_ref.url == url
+
+        # Test URLs from other allowed domains (should not require /api/ path)
+        other_domain_urls = [
+            "https://phaser.io/examples",
+            "https://www.phaser.io/tutorials",
+            "https://phaser.io/news",
+        ]
+
+        for url in other_domain_urls:
+            api_ref = ApiReference(
+                class_name="Test",
+                url=url,
+                description="Test description",
+            )
+            assert api_ref.url == url
+
+        # Test invalid API URLs (docs.phaser.io without /api/)
+        invalid_api_urls = [
+            "https://docs.phaser.io/phaser/getting-started",
+            "https://docs.phaser.io/tutorials/sprites",
+            "https://docs.phaser.io/examples/basic",
+        ]
+
+        for url in invalid_api_urls:
+            with pytest.raises(ValidationError) as exc_info:
+                ApiReference(
+                    class_name="Test",
+                    url=url,
+                    description="Test description",
+                )
+            assert "URL should be an API reference path" in str(exc_info.value)
+
+    def test_description_validation_edge_cases(self):
+        """Test description field validation edge cases."""
+        # Test minimum valid description
+        min_description = "A"
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description=min_description,
+        )
+        assert api_ref.description == min_description
+
+        # Test very long description
+        long_description = "A" * 10000  # Very long but should be valid
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description=long_description,
+        )
+        assert api_ref.description == long_description
+
+        # Test description with various characters
+        complex_description = """
+        This is a complex description with:
+        - Special characters: !@#$%^&*()
+        - Unicode: こんにちは 世界
+        - Code: `const x = 5;`
+        - HTML-like: <tag>content</tag>
+        - URLs: https://example.com
+        - Newlines and tabs
+        """
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description=complex_description,
+        )
+        assert api_ref.description == complex_description
+
+
+class TestModelSerialization:
+    """Tests for model serialization and deserialization."""
+
+    def test_documentation_page_json_serialization(self):
+        """Test DocumentationPage JSON serialization."""
+        from datetime import datetime, timezone
+
+        # Create a comprehensive DocumentationPage
+        page = DocumentationPage(
+            url="https://docs.phaser.io/phaser/getting-started",
+            title="Getting Started with Phaser",
+            content="# Getting Started\n\nThis guide helps you start with Phaser.",
+            last_modified=datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc),
+            content_type="text/html",
+            word_count=10,
+        )
+
+        # Test model_dump (JSON serialization)
+        page_dict = page.model_dump()
+        assert isinstance(page_dict, dict)
+        assert page_dict["url"] == "https://docs.phaser.io/phaser/getting-started"
+        assert page_dict["title"] == "Getting Started with Phaser"
+        assert (
+            page_dict["content"]
+            == "# Getting Started\n\nThis guide helps you start with Phaser."
+        )
+        assert page_dict["content_type"] == "text/html"
+        assert page_dict["word_count"] == 10
+        assert "last_modified" in page_dict
+
+        # Test model_dump_json (JSON string serialization)
+        page_json_str = page.model_dump_json()
+        assert isinstance(page_json_str, str)
+        assert "getting-started" in page_json_str
+        assert "Getting Started with Phaser" in page_json_str
+
+        # Test round-trip serialization
+        import json
+
+        page_dict_from_json = json.loads(page_json_str)
+        reconstructed_page = DocumentationPage(**page_dict_from_json)
+        assert reconstructed_page.url == page.url
+        assert reconstructed_page.title == page.title
+        assert reconstructed_page.content == page.content
+        assert reconstructed_page.content_type == page.content_type
+        assert reconstructed_page.word_count == page.word_count
+
+    def test_search_result_json_serialization(self):
+        """Test SearchResult JSON serialization."""
+        # Create a comprehensive SearchResult
+        result = SearchResult(
+            rank_order=1,
+            url="https://docs.phaser.io/phaser/sprites",
+            title="Working with Sprites",
+            snippet="Sprites are the basic building blocks of games in Phaser.",
+            relevance_score=0.95,
+        )
+
+        # Test model_dump
+        result_dict = result.model_dump()
+        assert isinstance(result_dict, dict)
+        assert result_dict["rank_order"] == 1
+        assert result_dict["url"] == "https://docs.phaser.io/phaser/sprites"
+        assert result_dict["title"] == "Working with Sprites"
+        assert (
+            result_dict["snippet"]
+            == "Sprites are the basic building blocks of games in Phaser."
+        )
+        assert result_dict["relevance_score"] == 0.95
+
+        # Test model_dump_json
+        result_json_str = result.model_dump_json()
+        assert isinstance(result_json_str, str)
+        assert "sprites" in result_json_str
+        assert "0.95" in result_json_str
+
+        # Test round-trip serialization
+        import json
+
+        result_dict_from_json = json.loads(result_json_str)
+        reconstructed_result = SearchResult(**result_dict_from_json)
+        assert reconstructed_result.rank_order == result.rank_order
+        assert reconstructed_result.url == result.url
+        assert reconstructed_result.title == result.title
+        assert reconstructed_result.snippet == result.snippet
+        assert reconstructed_result.relevance_score == result.relevance_score
+
+    def test_api_reference_json_serialization(self):
+        """Test ApiReference JSON serialization."""
+        # Create a comprehensive ApiReference
+        api_ref = ApiReference(
+            class_name="Sprite",
+            url="https://docs.phaser.io/api/Phaser.GameObjects.Sprite",
+            description="A Sprite Game Object is used to display textures in your game.",
+            methods=["setTexture", "setPosition", "destroy", "setVisible"],
+            properties=["x", "y", "texture", "visible", "alpha"],
+            examples=[
+                "const sprite = this.add.sprite(100, 100, 'player');",
+                "sprite.setTexture('enemy');",
+                "sprite.destroy();",
+            ],
+            parent_class="GameObject",
+            namespace="Phaser.GameObjects",
+        )
+
+        # Test model_dump
+        api_dict = api_ref.model_dump()
+        assert isinstance(api_dict, dict)
+        assert api_dict["class_name"] == "Sprite"
+        assert api_dict["url"] == "https://docs.phaser.io/api/Phaser.GameObjects.Sprite"
+        assert (
+            api_dict["description"]
+            == "A Sprite Game Object is used to display textures in your game."
+        )
+        assert api_dict["methods"] == [
+            "setTexture",
+            "setPosition",
+            "destroy",
+            "setVisible",
+        ]
+        assert api_dict["properties"] == ["x", "y", "texture", "visible", "alpha"]
+        assert len(api_dict["examples"]) == 3
+        assert api_dict["parent_class"] == "GameObject"
+        assert api_dict["namespace"] == "Phaser.GameObjects"
+
+        # Test model_dump_json
+        api_json_str = api_ref.model_dump_json()
+        assert isinstance(api_json_str, str)
+        assert "Sprite" in api_json_str
+        assert "setTexture" in api_json_str
+
+        # Test round-trip serialization
+        import json
+
+        api_dict_from_json = json.loads(api_json_str)
+        reconstructed_api = ApiReference(**api_dict_from_json)
+        assert reconstructed_api.class_name == api_ref.class_name
+        assert reconstructed_api.url == api_ref.url
+        assert reconstructed_api.description == api_ref.description
+        assert reconstructed_api.methods == api_ref.methods
+        assert reconstructed_api.properties == api_ref.properties
+        assert reconstructed_api.examples == api_ref.examples
+        assert reconstructed_api.parent_class == api_ref.parent_class
+        assert reconstructed_api.namespace == api_ref.namespace
+
+    def test_models_from_dict_comprehensive(self):
+        """Test creating models from dictionary data with comprehensive scenarios."""
+        # Test DocumentationPage from dict with all fields
+        page_data = {
+            "url": "https://docs.phaser.io/phaser/test",
+            "title": "Test Page - Phaser",  # Will be cleaned
+            "content": "This is test content with multiple words",
+            "last_modified": "2024-01-15T10:30:00Z",
+            "content_type": "text/markdown",
+            "word_count": 0,  # Will be auto-calculated
+        }
+        page = DocumentationPage(**page_data)
+        assert page.url == page_data["url"]
+        assert page.title == "Test Page"  # Cleaned
+        assert (
+            page.word_count == 7
+        )  # Auto-calculated: "This", "is", "test", "content", "with", "multiple", "words"
+
+        # Test DocumentationPage from dict with minimal fields
+        minimal_page_data = {
+            "url": "https://docs.phaser.io/phaser/minimal",
+            "title": "Minimal Page",
+            "content": "Minimal content",
+        }
+        minimal_page = DocumentationPage(**minimal_page_data)
+        assert minimal_page.url == minimal_page_data["url"]
+        assert minimal_page.content_type == "text/html"  # Default
+        assert minimal_page.last_modified is None  # Default
+
+        # Test SearchResult from dict with all fields
+        result_data = {
+            "rank_order": 5,
+            "url": "https://docs.phaser.io/phaser/search-result",
+            "title": "Search Result Title",
+            "snippet": "  This is a snippet with   extra   spaces  ",  # Will be cleaned
+            "relevance_score": 0.75,
+        }
+        result = SearchResult(**result_data)
+        assert result.rank_order == 5
+        assert result.snippet == "This is a snippet with extra spaces"  # Cleaned
+
+        # Test SearchResult from dict with minimal fields
+        minimal_result_data = {
+            "rank_order": 1,
+            "url": "https://docs.phaser.io/phaser/minimal-result",
+            "title": "Minimal Result",
+        }
+        minimal_result = SearchResult(**minimal_result_data)
+        assert minimal_result.snippet is None  # Default
+        assert minimal_result.relevance_score is None  # Default
+
+        # Test ApiReference from dict with all fields
+        api_data = {
+            "class_name": "  TestClass  ",  # Will be cleaned
+            "url": "https://docs.phaser.io/api/TestClass",
+            "description": "Test class description",
+            "methods": [
+                "method1",
+                "",
+                "method2",
+                "  method3  ",
+            ],  # Will be cleaned and filtered
+            "properties": [
+                "prop1",
+                "prop2",
+                "",
+                "  prop3  ",
+            ],  # Will be cleaned and filtered
+            "examples": [
+                "example1",
+                "",
+                "  example2  ",
+            ],  # Will be cleaned and filtered
+            "parent_class": "ParentClass",
+            "namespace": "Test.Namespace",
+        }
+        api_ref = ApiReference(**api_data)
+        assert api_ref.class_name == "TestClass"  # Cleaned
+        assert api_ref.methods == [
+            "method1",
+            "method2",
+            "method3",
+        ]  # Cleaned and filtered
+        assert api_ref.properties == ["prop1", "prop2", "prop3"]  # Cleaned and filtered
+        assert api_ref.examples == ["example1", "example2"]  # Cleaned and filtered
+
+        # Test ApiReference from dict with minimal fields
+        minimal_api_data = {
+            "class_name": "MinimalClass",
+            "url": "https://docs.phaser.io/api/MinimalClass",
+            "description": "Minimal class description",
+        }
+        minimal_api = ApiReference(**minimal_api_data)
+        assert minimal_api.methods == []  # Default
+        assert minimal_api.properties == []  # Default
+        assert minimal_api.examples == []  # Default
+        assert minimal_api.parent_class is None  # Default
+        assert minimal_api.namespace is None  # Default
+
+    def test_model_validation_during_deserialization(self):
+        """Test model validation during deserialization from dictionaries."""
+        # Test DocumentationPage validation errors during deserialization
+        invalid_page_data = {
+            "url": "invalid-url",  # Invalid URL
+            "title": "Test Page",
+            "content": "Test content",
+        }
+        with pytest.raises(ValidationError) as exc_info:
+            DocumentationPage(**invalid_page_data)
+        assert "URL must use http or https scheme" in str(exc_info.value)
+
+        # Test SearchResult validation errors during deserialization
+        invalid_result_data = {
+            "rank_order": 0,  # Invalid rank (must be >= 1)
+            "url": "https://docs.phaser.io/phaser/test",
+            "title": "Test Result",
+        }
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(**invalid_result_data)
+        assert "greater than or equal to 1" in str(exc_info.value)
+
+        # Test ApiReference validation errors during deserialization
+        invalid_api_data = {
+            "class_name": "Invalid-Class-Name",  # Invalid characters
+            "url": "https://docs.phaser.io/api/test",
+            "description": "Test description",
+        }
+        with pytest.raises(ValidationError) as exc_info:
+            ApiReference(**invalid_api_data)
+        assert "Class name contains invalid characters" in str(exc_info.value)
+
+    def test_model_serialization_with_none_values(self):
+        """Test model serialization with None values."""
+        # Test DocumentationPage with None last_modified
+        page = DocumentationPage(
+            url="https://docs.phaser.io/phaser/test",
+            title="Test Page",
+            content="Test content",
+            last_modified=None,
+        )
+        page_dict = page.model_dump()
+        assert page_dict["last_modified"] is None
+
+        # Test SearchResult with None snippet and relevance_score
+        result = SearchResult(
+            rank_order=1,
+            url="https://docs.phaser.io/phaser/test",
+            title="Test Result",
+            snippet=None,
+            relevance_score=None,
+        )
+        result_dict = result.model_dump()
+        assert result_dict["snippet"] is None
+        assert result_dict["relevance_score"] is None
+
+        # Test ApiReference with None parent_class and namespace
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            parent_class=None,
+            namespace=None,
+        )
+        api_dict = api_ref.model_dump()
+        assert api_dict["parent_class"] is None
+        assert api_dict["namespace"] is None
+
+    def test_model_serialization_exclude_fields(self):
+        """Test model serialization with field exclusion."""
+        # Test excluding specific fields during serialization
+        page = DocumentationPage(
+            url="https://docs.phaser.io/phaser/test",
+            title="Test Page",
+            content="Test content",
+            word_count=2,
+        )
+
+        # Exclude word_count from serialization
+        page_dict = page.model_dump(exclude={"word_count"})
+        assert "word_count" not in page_dict
+        assert "url" in page_dict
+        assert "title" in page_dict
+
+        # Exclude multiple fields
+        page_dict_minimal = page.model_dump(
+            exclude={"word_count", "content_type", "last_modified"}
+        )
+        assert "word_count" not in page_dict_minimal
+        assert "content_type" not in page_dict_minimal
+        assert "last_modified" not in page_dict_minimal
+        assert "url" in page_dict_minimal
+
+    def test_model_serialization_include_fields(self):
+        """Test model serialization with field inclusion."""
+        # Test including only specific fields during serialization
+        api_ref = ApiReference(
+            class_name="Test",
+            url="https://docs.phaser.io/api/test",
+            description="Test description",
+            methods=["method1", "method2"],
+            properties=["prop1", "prop2"],
+        )
+
+        # Include only basic fields
+        api_dict_basic = api_ref.model_dump(
+            include={"class_name", "url", "description"}
+        )
+        assert len(api_dict_basic) == 3
+        assert "class_name" in api_dict_basic
+        assert "url" in api_dict_basic
+        assert "description" in api_dict_basic
+        assert "methods" not in api_dict_basic
+        assert "properties" not in api_dict_basic
+
+    def test_model_validation_with_extra_fields(self):
+        """Test model validation with extra fields in input data."""
+        # Test that extra fields are ignored by default
+        page_data_with_extra = {
+            "url": "https://docs.phaser.io/phaser/test",
+            "title": "Test Page",
+            "content": "Test content",
+            "extra_field": "This should be ignored",
+            "another_extra": 123,
+        }
+
+        # Should create successfully, ignoring extra fields
+        page = DocumentationPage(**page_data_with_extra)
+        assert page.url == page_data_with_extra["url"]
+        assert page.title == page_data_with_extra["title"]
+        assert not hasattr(page, "extra_field")
+        assert not hasattr(page, "another_extra")
 
 
 class TestModelIntegration:
