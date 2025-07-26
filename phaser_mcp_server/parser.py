@@ -26,8 +26,10 @@ CodeBlock = dict[str, Any]
 
 # Suppress specific pyright warnings for BeautifulSoup usage
 # These suppressions are necessary due to limitations in BeautifulSoup type stubs
-# reportUnknownMemberType: BeautifulSoup's get_text() method has partially unknown types
-# reportUnnecessaryIsInstance: Some isinstance checks are flagged as unnecessary but are needed for runtime safety
+# reportUnknownMemberType: BeautifulSoup's get_text() method has partially
+# unknown types
+# reportUnnecessaryIsInstance: Some isinstance checks are flagged as
+# unnecessary but are needed for runtime safety
 # pyright: reportUnknownMemberType=false
 # pyright: reportUnnecessaryIsInstance=false
 
