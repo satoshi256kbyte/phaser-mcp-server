@@ -12,22 +12,7 @@ from pytest_mock import MockerFixture
 from phaser_mcp_server.client import ValidationError
 from phaser_mcp_server.models import SearchResult
 from phaser_mcp_server.server import server
-
-
-class MockContext:
-    """Mock MCP context for testing."""
-
-    def __init__(self):
-        self.session_id = "test-session"
-        self.request_id = "test-request"
-
-    def get_session_id(self) -> str:
-        """Get session ID."""
-        return self.session_id
-
-    def get_request_id(self) -> str:
-        """Get request ID."""
-        return self.request_id
+from tests.utils import MockContext
 
 
 class TestMCPToolsIntegration:
@@ -413,7 +398,7 @@ sprite.setScale(2);
 
             assert isinstance(result, str)
             assert "# NonExistentClass" in result
-            assert "No specific documentation page found" in result
+            assert "No docs found" in result
 
     @pytest.mark.asyncio
     async def test_get_api_reference_network_error(self, mock_context: MockContext):

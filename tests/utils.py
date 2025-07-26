@@ -4,12 +4,19 @@ This module provides utility functions for testing the Phaser MCP Server.
 """
 
 import gc
-from typing import Dict, Optional
 from unittest.mock import Mock
 
 import pytest
 
 from phaser_mcp_server.utils import get_memory_usage
+
+
+class MockContext:
+    """Mock MCP context for testing."""
+
+    def __init__(self):
+        """Initialize mock context."""
+        pass
 
 
 def create_mock_response(
@@ -40,13 +47,7 @@ def create_mock_response(
     # Set binary content properly - both _content and content properties
     content_bytes = content.encode("utf-8")
     mock_response._content = content_bytes
-
-    # Create a mock content object that supports len()
-    mock_content = Mock()
-    mock_content.__len__ = Mock(return_value=len(content_bytes))
-    mock_content.__bytes__ = Mock(return_value=content_bytes)
-    mock_content.__str__ = Mock(return_value=content)
-    mock_response.content = mock_content
+    mock_response.content = content_bytes
 
     # Implement raise_for_status method based on status code
     def raise_for_status() -> None:
@@ -63,7 +64,7 @@ def create_mock_response(
 
 
 @pytest.fixture
-def setup_test_environment() -> Dict[str, Optional[float]]:
+def setup_test_environment() -> dict[str, float | None]:
     """テスト環境をセットアップし、テスト前後の状態を管理する。
 
     このフィクスチャは、テスト実行前にガベージコレクションを強制実行して

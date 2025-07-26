@@ -56,10 +56,18 @@ class PhaserDocsClient:
     # Maximum response size to prevent DoS (1MB)
     MAX_RESPONSE_SIZE = 1024 * 1024
 
-    # Default headers for requests - using realistic browser headers to avoid bot detection
+    # Default headers for requests - using realistic browser headers to avoid detection
     DEFAULT_HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/avif,image/webp,image/apng,*/*;q=0.8,"
+            "application/signed-exchange;v=b3;q=0.7"
+        ),
         "Accept-Language": "en-US,en;q=0.9,ja;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
         "DNT": "1",

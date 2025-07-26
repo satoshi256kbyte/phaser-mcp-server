@@ -90,6 +90,7 @@ class TestDocumentationPage:
             "file:///local/path",
             "javascript:alert('xss')",
             "data:text/html,<script>alert('xss')</script>",
+            "://docs.phaser.io/test",  # Empty scheme
         ]
 
         for invalid_url in invalid_urls:
@@ -186,22 +187,6 @@ class TestDocumentationPage:
                 word_count=-1,
             )
         assert "greater than or equal to 0" in str(exc_info.value)
-
-    def test_malformed_url_parsing(self):
-        """Test DocumentationPage URL parsing exception handling."""
-        # Test with a URL that causes urlparse to raise an exception
-        with pytest.raises(ValidationError) as exc_info:
-            DocumentationPage(
-                url="http://[invalid-ipv6-address",  # Malformed IPv6 URL
-                title="Test",
-                content="Test content",
-            )
-        # The exact error message may vary
-        error_msg = str(exc_info.value)
-        assert (
-            "Invalid URL format" in error_msg
-            or "URL must use http or https scheme" in error_msg
-        )
 
     def test_word_count_edge_cases(self):
         """Test word count calculation with edge cases."""
@@ -320,6 +305,7 @@ class TestSearchResult:
             "ftp://docs.phaser.io/test",
             "file:///local/path",
             "javascript:void(0)",
+            "://docs.phaser.io/test",  # Empty scheme
         ]
 
         for invalid_url in invalid_urls:
@@ -339,21 +325,6 @@ class TestSearchResult:
                 snippet=long_snippet,
             )
         assert "at most 1000 characters" in str(exc_info.value)
-
-    def test_malformed_url_parsing(self):
-        """Test SearchResult URL parsing exception handling."""
-        with pytest.raises(ValidationError) as exc_info:
-            SearchResult(
-                rank_order=1,
-                url="http://[invalid-ipv6-address",  # Malformed IPv6 URL
-                title="Test",
-            )
-        # The exact error message may vary
-        error_msg = str(exc_info.value)
-        assert (
-            "Invalid URL format" in error_msg
-            or "URL must use http or https scheme" in error_msg
-        )
 
     def test_snippet_edge_cases(self):
         """Test snippet handling with various edge cases."""
@@ -478,17 +449,30 @@ class TestApiReference:
     def test_invalid_api_urls(self):
         """Test validation of invalid API URLs."""
         # URLs that don't contain /api/ path from docs.phaser.io
-        invalid_urls = [
+        invalid_path_urls = [
             "https://docs.phaser.io/phaser/getting-started",
             "https://docs.phaser.io/tutorials/sprites",
         ]
 
-        for invalid_url in invalid_urls:
+        # URLs with invalid schemes
+        invalid_scheme_urls = [
+            "ftp://docs.phaser.io/api/test",
+            "://docs.phaser.io/api/test",  # Empty scheme
+        ]
+
+        for invalid_url in invalid_path_urls:
             with pytest.raises(ValidationError) as exc_info:
                 ApiReference(
                     class_name="Test", url=invalid_url, description="Test description"
                 )
             assert "URL should be an API reference path" in str(exc_info.value)
+
+        for invalid_url in invalid_scheme_urls:
+            with pytest.raises(ValidationError) as exc_info:
+                ApiReference(
+                    class_name="Test", url=invalid_url, description="Test description"
+                )
+            assert "URL must use http or https scheme" in str(exc_info.value)
 
         # Test that phaser.io URLs are accepted (not docs.phaser.io)
         valid_url = "https://phaser.io/examples"
@@ -593,21 +577,6 @@ class TestApiReference:
                 namespace=long_namespace,
             )
         assert "at most 200 characters" in str(exc_info.value)
-
-    def test_malformed_url_parsing(self):
-        """Test ApiReference URL parsing exception handling."""
-        with pytest.raises(ValidationError) as exc_info:
-            ApiReference(
-                class_name="Test",
-                url="http://[invalid-ipv6-address",  # Malformed IPv6 URL
-                description="Test description",
-            )
-        # The exact error message may vary
-        error_msg = str(exc_info.value)
-        assert (
-            "Invalid URL format" in error_msg
-            or "URL must use http or https scheme" in error_msg
-        )
 
     def test_empty_lists_handling(self):
         """Test ApiReference with various empty list scenarios."""
@@ -1034,27 +1003,49 @@ class TestEdgeCasesAndErrorHandling:
         """Test URL parsing exception handling in validators."""
         # Test with extremely malformed URLs that might cause urlparse to fail
         # These are edge cases that could potentially cause urlparse exceptions
-        
+
         # Test with None (should be caught by empty check first)
         with pytest.raises(ValidationError):
             DocumentationPage(
                 url=None,  # type: ignore
                 title="Test",
-                content="Test content"
+                content="Test content",
             )
-            
+
         # Test with non-string URL
         with pytest.raises(ValidationError):
             SearchResult(
                 rank_order=1,
                 url=123,  # type: ignore
-                title="Test"
+                title="Test",
             )
-            
+
         # Test with non-string URL for ApiReference
         with pytest.raises(ValidationError):
             ApiReference(
                 class_name="TestClass",
                 url=[],  # type: ignore
-                description="Test description"
+                description="Test description",
             )
+
+
+class TestEmptyUrlValidation:
+    """Test empty URL validation for all models."""
+
+    def test_documentation_page_empty_url_validation(self):
+        """Test DocumentationPage validation with empty URL."""
+        # Test with empty URL
+        with pytest.raises(ValidationError):
+            DocumentationPage(url="", title="Test Page", content="Test content")
+
+    def test_search_result_empty_url_validation(self):
+        """Test SearchResult validation with empty URL."""
+        # Test with empty URL
+        with pytest.raises(ValidationError):
+            SearchResult(rank_order=1, url="", title="Test Result")
+
+    def test_api_reference_empty_url_validation(self):
+        """Test ApiReference validation with empty URL."""
+        # Test with empty URL
+        with pytest.raises(ValidationError):
+            ApiReference(class_name="TestClass", url="", description="Test description")

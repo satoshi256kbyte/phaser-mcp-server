@@ -1,10 +1,10 @@
 """Tests for utility functions.
 
-This module contains tests for the utility functions in the phaser_mcp_server.utils module.
+This module contains tests for the utility functions in the
+phaser_mcp_server.utils module.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from phaser_mcp_server.utils import get_memory_usage
 
@@ -30,15 +30,8 @@ class TestMemoryUsage:
 
     def test_get_memory_usage_without_psutil(self):
         """Test get_memory_usage when psutil is not available."""
-        # Patch the import function to raise ImportError when importing psutil
-        with patch(
-            "builtins.__import__",
-            side_effect=lambda name, *args, **kwargs: (
-                __import__(name, *args, **kwargs)
-                if name != "psutil"
-                else exec("raise ImportError")
-            ),
-        ):
+        # Mock the psutil module to raise ImportError
+        with patch.dict("sys.modules", {"psutil": None}):
             # Call the function
             memory_usage = get_memory_usage()
 

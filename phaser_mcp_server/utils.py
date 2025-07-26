@@ -4,11 +4,9 @@ This module provides utility functions for the Phaser MCP Server, including
 performance measurement and testing utilities.
 """
 
-from typing import Optional
 
-
-def get_memory_usage() -> Optional[float]:
-    """現在のプロセスのメモリ使用量を取得する。
+def get_memory_usage() -> float | None:
+    """現在のプロセスのメモリ使用量を取得する.
 
     このユーティリティ関数は、現在実行中のPythonプロセスのメモリ使用量を
     メガバイト単位で返します。psutilモジュールが利用できない場合は、
@@ -18,8 +16,9 @@ def get_memory_usage() -> Optional[float]:
         メモリ使用量（MB）またはNone（psutilが利用できない場合）
     """
     try:
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         # RSS (Resident Set Size) - 実際に使用されている物理メモリ量

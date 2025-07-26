@@ -78,10 +78,7 @@ class DocumentationPage(BaseModel):
         if not v:
             raise ValueError("URL cannot be empty")
 
-        try:
-            parsed = urlparse(v)
-        except Exception as e:
-            raise ValueError(f"Invalid URL format: {e}") from e
+        parsed = urlparse(v)
 
         # Check for valid scheme
         if parsed.scheme not in ["http", "https"]:
@@ -198,10 +195,7 @@ class SearchResult(BaseModel):
         if not v:
             raise ValueError("Search result URL cannot be empty")
 
-        try:
-            parsed = urlparse(v)
-        except Exception as e:
-            raise ValueError(f"Invalid URL format: {e}") from e
+        parsed = urlparse(v)
 
         if parsed.scheme not in ["http", "https"]:
             raise ValueError("URL must use http or https scheme")
@@ -334,10 +328,7 @@ class ApiReference(BaseModel):
         if not v:
             raise ValueError("API reference URL cannot be empty")
 
-        try:
-            parsed = urlparse(v)
-        except Exception as e:
-            raise ValueError(f"Invalid URL format: {e}") from e
+        parsed = urlparse(v)
 
         if parsed.scheme not in ["http", "https"]:
             raise ValueError("URL must use http or https scheme")

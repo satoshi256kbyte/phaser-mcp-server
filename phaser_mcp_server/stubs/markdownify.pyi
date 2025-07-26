@@ -4,7 +4,19 @@ This module provides type definitions for the markdownify library
 to resolve type checking issues with Pyright.
 """
 
-from typing import Any, List, Optional, Union, Callable, Pattern
+from collections.abc import Callable
+from typing import Any
+
+# Re-exported BeautifulSoup types for convenience
+from bs4 import (
+    BeautifulSoup as BeautifulSoup,
+)
+from bs4 import (
+    NavigableString as NavigableString,
+)
+from bs4 import (
+    Tag as Tag,
+)
 
 # Constants for heading styles
 ATX: str
@@ -17,131 +29,130 @@ ASTERISK: str
 UNDERSCORE: str
 BACKSLASH: str
 
-# Constants for whitespace handling
-SPACES: str
-STRIP: str
-LSTRIP: str
-RSTRIP: str
+# Constants for list bullets
+UNORDERED: str
+ORDERED: str
 
-# Regular expression patterns
-re_all_whitespace: Pattern[str]
-re_convert_heading: Pattern[str]
-re_escape_misc_chars: Pattern[str]
-re_escape_misc_dash_sequences: Pattern[str]
-re_escape_misc_hashes: Pattern[str]
-re_escape_misc_list_items: Pattern[str]
-re_extract_newlines: Pattern[str]
-re_html_heading: Pattern[str]
-re_line_with_content: Pattern[str]
-re_make_convert_fn_name: Pattern[str]
-re_newline_whitespace: Pattern[str]
-re_whitespace: Pattern[str]
+# Constants for code block styles
+FENCED: str
+INDENTED: str
 
-def markdownify(
-    html: Union[str, bytes],
-    heading_style: str = "underlined",
-    bullets: str = "*",
-    emphasis_mark: str = "_",
-    strong_mark: str = "**",
-    sub_symbol: str = "",
-    sup_symbol: str = "",
-    wrap: bool = False,
-    wrap_width: int = 80,
-    convert: Optional[List[str]] = None,
-    strip: Optional[List[str]] = None,
-    default_title: bool = False,
-    escape_asterisks: bool = True,
-    escape_underscores: bool = True,
-    escape_misc: bool = True,
-    newline_style: str = "spaces",
-    code_language: str = "",
-    autolinks: bool = True,
-    **options: Any,
-) -> str:
-    """Convert HTML to Markdown.
-
-    Args:
-        html: HTML content to convert
-        heading_style: Style for headings ("underlined", "atx", "setext")
-        bullets: Character to use for bullet points
-        emphasis_mark: Character to use for emphasis
-        strong_mark: Characters to use for strong text
-        sub_symbol: Symbol for subscript
-        sup_symbol: Symbol for superscript
-        wrap: Whether to wrap long lines
-        wrap_width: Width to wrap at
-        convert: List of tags to convert
-        strip: List of tags to strip
-        default_title: Whether to use default title
-        escape_asterisks: Whether to escape asterisks
-        escape_underscores: Whether to escape underscores
-        escape_misc: Whether to escape miscellaneous characters
-        newline_style: Style for newlines
-        code_language: Default language for code blocks
-        autolinks: Whether to convert URLs to links
-        **options: Additional options
-
-    Returns:
-        Markdown string
-    """
-    ...
+# Type aliases
+TagOrString = Tag | NavigableString
+ConvertFunction = Callable[[Tag, bool, dict[str, Any]], str]
 
 class MarkdownConverter:
     """Main converter class for HTML to Markdown conversion."""
 
     def __init__(
         self,
-        heading_style: str = "underlined",
-        bullets: str = "*",
-        emphasis_mark: str = "_",
-        strong_mark: str = "**",
-        sub_symbol: str = "",
-        sup_symbol: str = "",
+        *,
+        heading_style: str = ATX,
+        bullets: str = UNORDERED,
+        emphasis_mark: str = ASTERISK,
+        strong_mark: str = ASTERISK,
+        code_language: str = "",
         wrap: bool = False,
         wrap_width: int = 80,
-        convert: Optional[List[str]] = None,
-        strip: Optional[List[str]] = None,
+        autolinks: bool = True,
+        convert: list[str] | None = None,
+        strip: list[str] | None = None,
         default_title: bool = False,
         escape_asterisks: bool = True,
         escape_underscores: bool = True,
         escape_misc: bool = True,
-        newline_style: str = "spaces",
-        code_language: str = "",
-        autolinks: bool = True,
+        newline_style: str = "\n",
         **options: Any,
     ) -> None: ...
-    def convert(self, html: Union[str, bytes]) -> str: ...
-    def convert_soup(self, soup: Any) -> str: ...
+    def convert(self, soup: BeautifulSoup | Tag | str) -> str:
+        """Convert HTML to Markdown."""
+        ...
+
     def process_tag(
-        self, node: Any, convert_as_inline: bool = False, children_only: bool = False
+        self,
+        node: Tag,
+        convert_as_inline: bool,
+        children_only: bool = False,
+    ) -> str:
+        """Process a single HTML tag."""
+        ...
+
+    def convert_a(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_b(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_blockquote(
+        self, el: Tag, text: str, convert_as_inline: bool
     ) -> str: ...
+    def convert_br(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_code(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_del(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_em(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h1(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h2(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h3(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h4(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h5(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_h6(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_hr(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_i(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_img(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_li(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_ol(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_p(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_pre(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_s(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_strong(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_table(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_td(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_th(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_tr(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_u(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
+    def convert_ul(self, el: Tag, text: str, convert_as_inline: bool) -> str: ...
 
-# Utility functions
-def abstract_inline_conversion(
-    markup_fn: Callable[[str], str]
-) -> Callable[[Any, str], str]: ...
-def chomp(text: str) -> str:
-    """Remove trailing whitespace from text."""
+def markdownify(
+    html: str | BeautifulSoup | Tag,
+    *,
+    heading_style: str = ATX,
+    bullets: str = UNORDERED,
+    emphasis_mark: str = ASTERISK,
+    strong_mark: str = ASTERISK,
+    code_language: str = "",
+    wrap: bool = False,
+    wrap_width: int = 80,
+    autolinks: bool = True,
+    convert: list[str] | None = None,
+    strip: list[str] | None = None,
+    default_title: bool = False,
+    escape_asterisks: bool = True,
+    escape_underscores: bool = True,
+    escape_misc: bool = True,
+    newline_style: str = "\n",
+    **options: Any,
+) -> str:
+    """Convert HTML to Markdown.
+
+    Args:
+        html: HTML content to convert
+        heading_style: Style for headings (ATX, ATX_CLOSED, SETEXT, UNDERLINED)
+        bullets: Style for unordered lists (UNORDERED, ORDERED)
+        emphasis_mark: Mark for emphasis (ASTERISK, UNDERSCORE)
+        strong_mark: Mark for strong text (ASTERISK, UNDERSCORE)
+        code_language: Default language for code blocks
+        wrap: Whether to wrap long lines
+        wrap_width: Width for line wrapping
+        autolinks: Whether to convert URLs to links automatically
+        convert: List of tags to convert
+        strip: List of tags to strip
+        default_title: Whether to use default title for links
+        escape_asterisks: Whether to escape asterisks
+        escape_underscores: Whether to escape underscores
+        escape_misc: Whether to escape miscellaneous characters
+        newline_style: Style for newlines
+        **options: Additional options
+
+    Returns:
+        Markdown string
+    """
     ...
-
-def fill(text: str, width: int = 80) -> str:
-    """Fill text to specified width."""
-    ...
-
-def should_remove_whitespace_inside(tag: Any) -> bool:
-    """Check if whitespace should be removed inside a tag."""
-    ...
-
-def should_remove_whitespace_outside(tag: Any) -> bool:
-    """Check if whitespace should be removed outside a tag."""
-    ...
-
-# Re-exported BeautifulSoup types for convenience
-from bs4 import (
-    BeautifulSoup as BeautifulSoup,
-    Tag as Tag,
-    NavigableString as NavigableString,
-)
 
 # Convenience aliases
 md = markdownify

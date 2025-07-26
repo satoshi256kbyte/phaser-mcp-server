@@ -701,19 +701,10 @@ class TestParserErrorHandling:
     def test_parser_handles_no_main_content_error(self):
         """Test parser raises error when no main content is found."""
         parser = PhaserDocumentParser()
-        
+
         # HTML with only navigation and footer, no main content
         # The parser actually falls back to body, so we need truly empty content
-        html_no_main = """
-        <html>
-        <head><title>No Main Content</title></head>
-        <body>
-            <nav></nav>
-            <footer></footer>
-        </body>
-        </html>
-        """
-        
+
         # This will actually use body as fallback, so it won't raise an error
         # Let's test with completely empty body instead
         html_empty_body = """
@@ -722,7 +713,7 @@ class TestParserErrorHandling:
         <body></body>
         </html>
         """
-        
+
         # This should also use body as fallback but with empty content
         result = parser.parse_html_content(html_empty_body)
         assert result["title"] == "Empty"
@@ -731,30 +722,34 @@ class TestParserErrorHandling:
     def test_parser_error_handling_edge_cases(self):
         """Test parser error handling for various edge cases."""
         parser = PhaserDocumentParser()
-        
+
         # Test with invalid HTML that might cause parsing issues
         invalid_html = "<html><body><div><p>Unclosed tags"
-        
+
         # Should still parse but might have issues
         result = parser.parse_html_content(invalid_html)
         assert "title" in result
-        
+
         # Test convert_to_markdown with invalid input type
         with pytest.raises(MarkdownConversionError, match="Invalid input type"):
             parser.convert_to_markdown(123)  # type: ignore
-            
+
         # Test convert_to_markdown with empty parsed content
-        with pytest.raises(MarkdownConversionError, match="Invalid parsed content structure"):
+        with pytest.raises(
+            MarkdownConversionError, match="Invalid parsed content structure"
+        ):
             parser.convert_to_markdown({})  # Empty dict
-            
+
         # Test convert_to_markdown with parsed content missing 'content' key
-        with pytest.raises(MarkdownConversionError, match="Invalid parsed content structure"):
+        with pytest.raises(
+            MarkdownConversionError, match="Invalid parsed content structure"
+        ):
             parser.convert_to_markdown({"title": "Test"})  # Missing 'content' key
 
     def test_parser_markdown_conversion_edge_cases(self):
         """Test markdown conversion with edge cases."""
         parser = PhaserDocumentParser()
-        
+
         # Test with content that has no main content (None)
         parsed_content = {
             "title": "Test",
@@ -763,16 +758,16 @@ class TestParserErrorHandling:
             "code_blocks": [],
             "phaser_content": {},
             "soup": None,
-            "url": ""
+            "url": "",
         }
-        
+
         with pytest.raises(MarkdownConversionError, match="No content to convert"):
             parser.convert_to_markdown(parsed_content)
 
     def test_parser_phaser_content_categorization(self):
         """Test Phaser-specific content categorization."""
         parser = PhaserDocumentParser()
-        
+
         # HTML with various Phaser patterns to test categorization
         html_with_phaser = """
         <html>
@@ -786,7 +781,7 @@ class TestParserErrorHandling:
                 });
                 this.input.on('touch', handleTouch);
                 </code></pre>
-                
+
                 <h3>Game Guide</h3>
                 <pre><code>
                 // Tutorial code
@@ -799,21 +794,20 @@ class TestParserErrorHandling:
         </body>
         </html>
         """
-        
+
         result = parser.parse_html_content(html_with_phaser)
         phaser_content = result["phaser_content"]
-        
+
         # Check that input handlers are properly categorized
         assert len(phaser_content["input_handlers"]) > 0
         input_handler_content = phaser_content["input_handlers"][0]["content"]
         assert "setInteractive" in input_handler_content
         assert "pointerdown" in input_handler_content
-        
+
         # Check that tutorials are properly categorized
         # The context might be empty, so let's check if tutorials exist at all
         if len(phaser_content["tutorials"]) > 0:
             # If tutorials exist, check their context
-            tutorial_context = phaser_content["tutorials"][0]["context"]
             # Context might be empty, so just check that tutorials were found
             assert len(phaser_content["tutorials"]) > 0
         else:
@@ -1337,3 +1331,288 @@ class GameScene extends Phaser.Scene {
         assert isinstance(markdown_result, str)
         assert "Phaser.Scene" in markdown_result
         assert "```" in markdown_result  # Code block should be preserved
+
+
+class TestErrorHandling:
+    """Test error handling scenarios."""
+
+    def test_parse_html_no_main_content_uses_body_fallback(self):
+        """Test parsing HTML without main content uses body as fallback."""
+        parser = PhaserDocumentParser()
+
+        # HTML without main content
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <div>Some content</div>
+        </body>
+        </html>
+        """
+
+        # Should use body as fallback and not raise error
+        result = parser.parse_html_to_markdown(html_content)
+        assert isinstance(result, str)
+        assert "Some content" in result
+
+    def test_parse_html_completely_empty_body(self):
+        """Test parsing HTML with completely empty body."""
+        parser = PhaserDocumentParser()
+
+        # HTML with empty body
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body></body>
+        </html>
+        """
+
+        # Should handle empty body gracefully
+        result = parser.parse_html_to_markdown(html_content)
+        assert isinstance(result, str)
+
+    def test_parse_html_empty_main_content(self):
+        """Test parsing HTML with empty main content."""
+        parser = PhaserDocumentParser()
+
+        # HTML with empty main content
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main></main>
+        </body>
+        </html>
+        """
+
+        # Should handle empty main content gracefully
+        result = parser.parse_html_to_markdown(html_content)
+        assert isinstance(result, str)
+
+    def test_parse_html_with_script_tags(self):
+        """Test parsing HTML with script tags (should be removed)."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <h1>Test Content</h1>
+                <script>alert('malicious');</script>
+                <p>Safe content</p>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+
+        # Script should be removed
+        assert "alert" not in result
+        assert "malicious" not in result
+        assert "Test Content" in result
+        assert "Safe content" in result
+
+    def test_parse_html_with_style_tags(self):
+        """Test parsing HTML with style tags (should be removed)."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <h1>Test Content</h1>
+                <style>body { color: red; }</style>
+                <p>Safe content</p>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+
+        # Style should be removed
+        assert "color: red" not in result
+        assert "Test Content" in result
+        assert "Safe content" in result
+
+
+class TestEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    def test_parse_html_with_malformed_html(self):
+        """Test parsing malformed HTML."""
+        parser = PhaserDocumentParser()
+
+        # Malformed HTML
+        html_content = """
+        <html>
+        <head><title>Test</title>
+        <body>
+            <main>
+                <h1>Test Content
+                <p>Unclosed tags
+                <div>More content</div>
+            </main>
+        </body>
+        """
+
+        # Should handle malformed HTML gracefully
+        result = parser.parse_html_to_markdown(html_content)
+        assert isinstance(result, str)
+        assert "Test Content" in result
+
+    def test_parse_html_with_nested_elements(self):
+        """Test parsing HTML with deeply nested elements."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <div>
+                    <div>
+                        <div>
+                            <div>
+                                <p>Deeply nested content</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Deeply nested content" in result
+
+
+class TestEmptyContentHandling:
+    """Test handling of empty content."""
+
+    def test_parse_html_with_empty_text_elements(self):
+        """Test parsing HTML with elements that have no text content."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <div>
+                    <span></span>
+                    <p>   </p>
+                    <div>
+                        <strong></strong>
+                    </div>
+                    <p>Some actual content</p>
+                </div>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Some actual content" in result
+        # Should handle empty elements gracefully
+
+
+class TestSpecialCases:
+    """Test special cases and boundary conditions."""
+
+    def test_parse_html_with_empty_elements(self):
+        """Test parsing HTML with empty elements."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <h1></h1>
+                <p></p>
+                <div></div>
+                <span>Some content</span>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Some content" in result
+
+    def test_parse_html_with_special_characters(self):
+        """Test parsing HTML with special characters."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <p>Special chars: &amp; &lt; &gt; &quot; &#39;</p>
+                <p>Unicode: 🎮 ⚡ 🚀</p>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Special chars:" in result
+        assert "Unicode:" in result
+
+    def test_parse_html_with_comments(self):
+        """Test parsing HTML with comments."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <!-- This is a comment -->
+                <p>Visible content</p>
+                <!-- Another comment -->
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Visible content" in result
+        # Comments should not appear in output
+        assert "This is a comment" not in result
+
+    def test_parse_html_with_mixed_content(self):
+        """Test parsing HTML with mixed content types."""
+        parser = PhaserDocumentParser()
+
+        html_content = """
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <main>
+                <h1>Title</h1>
+                <p>Paragraph with <strong>bold</strong> and <em>italic</em> text.</p>
+                <ul>
+                    <li>List item 1</li>
+                    <li>List item 2</li>
+                </ul>
+                <pre><code>code block</code></pre>
+                <blockquote>Quote text</blockquote>
+            </main>
+        </body>
+        </html>
+        """
+
+        result = parser.parse_html_to_markdown(html_content)
+        assert "Title" in result
+        assert "bold" in result
+        assert "italic" in result
+        assert "List item 1" in result
+        assert "code block" in result
+        assert "Quote text" in result

@@ -4,48 +4,50 @@ This module provides type definitions for the BeautifulSoup4 library
 to resolve type checking issues with Pyright.
 """
 
-from typing import Any, Dict, Iterable, List, Optional, Union, Iterator, Callable
 import re
+from collections.abc import Callable, Iterable, Iterator
+from typing import Any
 
 class NavigableString(str):
-    """A NavigableString is just a Python string that knows about its place in the parse tree."""
+    """A NavigableString is just a Python string that knows about its place.
 
-    def __new__(cls, value: str) -> "NavigableString":
+    This class represents a string that is aware of its position in the parse tree.
+    """
+
+    def __new__(cls, value: str) -> NavigableString:
         """Create a new NavigableString instance."""
         ...
 
     @property
-    def parent(self) -> Optional["Tag"]:
+    def parent(self) -> Tag | None:
         """Return the parent Tag of this NavigableString."""
         ...
 
     @property
-    def next_sibling(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def next_sibling(self) -> Tag | NavigableString | None:
         """Return the next sibling element."""
         ...
 
     @property
-    def previous_sibling(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def previous_sibling(self) -> Tag | NavigableString | None:
         """Return the previous sibling element."""
         ...
 
     @property
-    def next_element(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def next_element(self) -> Tag | NavigableString | None:
         """Return the next element in the parse tree."""
         ...
 
     @property
-    def previous_element(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def previous_element(self) -> Tag | NavigableString | None:
         """Return the previous element in the parse tree."""
         ...
 
-    def extract(self) -> "NavigableString":
+    def extract(self) -> NavigableString:
         """Remove this element from the tree and return it."""
         ...
 
-    def replace_with(
-        self, *args: Union["Tag", "NavigableString", str]
-    ) -> "NavigableString":
+    def replace_with(self, *args: Tag | NavigableString | str) -> NavigableString:
         """Replace this element with the given elements."""
         ...
 
@@ -53,50 +55,48 @@ class PageElement:
     """Base class for all parse tree elements."""
 
     @property
-    def parent(self) -> Optional["Tag"]:
+    def parent(self) -> Tag | None:
         """Return the parent Tag of this element."""
         ...
 
     @property
-    def next_sibling(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def next_sibling(self) -> Tag | NavigableString | None:
         """Return the next sibling element."""
         ...
 
     @property
-    def previous_sibling(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def previous_sibling(self) -> Tag | NavigableString | None:
         """Return the previous sibling element."""
         ...
 
     @property
-    def next_element(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def next_element(self) -> Tag | NavigableString | None:
         """Return the next element in the parse tree."""
         ...
 
     @property
-    def previous_element(self) -> Optional[Union["Tag", "NavigableString"]]:
+    def previous_element(self) -> Tag | NavigableString | None:
         """Return the previous element in the parse tree."""
         ...
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Return the name of this element."""
         ...
 
-    def extract(self) -> "PageElement":
+    def extract(self) -> PageElement:
         """Remove this element from the tree and return it."""
         ...
 
-    def replace_with(
-        self, *args: Union["Tag", "NavigableString", str]
-    ) -> "PageElement":
+    def replace_with(self, *args: Tag | NavigableString | str) -> PageElement:
         """Replace this element with the given elements."""
         ...
 
-    def wrap(self, wrap_with: "Tag") -> "Tag":
+    def wrap(self, wrap_with: Tag) -> Tag:
         """Wrap this element in the given tag."""
         ...
 
-    def unwrap(self) -> Optional["PageElement"]:
+    def unwrap(self) -> PageElement | None:
         """Remove this element's tag and return its contents."""
         ...
 
@@ -111,48 +111,57 @@ class PageElement:
 
     def find(
         self,
-        name: Optional[
-            Union[str, List[str], re.Pattern[str], Callable[[str], bool], bool]
-        ] = None,
-        attrs: Optional[Union[Dict[str, Any], str]] = None,
+        name: str
+        | list[str]
+        | re.Pattern[str]
+        | Callable[[str], bool]
+        | bool
+        | None = None,
+        attrs: dict[str, Any] | str | None = None,
         recursive: bool = True,
-        string: Optional[Union[str, re.Pattern[str]]] = None,
+        string: str | re.Pattern[str] | None = None,
         **kwargs: Any,
-    ) -> Optional["Tag"]:
+    ) -> Tag | None:
         """Find the first matching element."""
         ...
 
     def find_all(
         self,
-        name: Optional[
-            Union[str, List[str], re.Pattern[str], Callable[[str], bool], bool]
-        ] = None,
-        attrs: Optional[Union[Dict[str, Any], str]] = None,
+        name: str
+        | list[str]
+        | re.Pattern[str]
+        | Callable[[str], bool]
+        | bool
+        | None = None,
+        attrs: dict[str, Any] | str | None = None,
         recursive: bool = True,
-        string: Optional[Union[str, re.Pattern[str]]] = None,
-        limit: Optional[int] = None,
+        string: str | re.Pattern[str] | None = None,
+        limit: int | None = None,
         **kwargs: Any,
-    ) -> "ResultSet[Tag]":
+    ) -> ResultSet[Tag]:
         """Find all matching elements."""
         ...
 
-    def select(self, selector: str) -> List["Tag"]:
+    def select(self, selector: str) -> list[Tag]:
         """Find elements using CSS selector."""
         ...
 
-    def select_one(self, selector: str) -> Optional["Tag"]:
+    def select_one(self, selector: str) -> Tag | None:
         """Find the first element using CSS selector."""
         ...
 
     def find_previous(
         self,
-        name: Optional[
-            Union[str, List[str], re.Pattern[str], Callable[[str], bool], bool]
-        ] = None,
-        attrs: Optional[Union[Dict[str, Any], str]] = None,
-        string: Optional[Union[str, re.Pattern[str]]] = None,
+        name: str
+        | list[str]
+        | re.Pattern[str]
+        | Callable[[str], bool]
+        | bool
+        | None = None,
+        attrs: dict[str, Any] | str | None = None,
+        string: str | re.Pattern[str] | None = None,
         **kwargs: Any,
-    ) -> Optional["Tag"]:
+    ) -> Tag | None:
         """Find the previous matching element."""
         ...
 
@@ -160,64 +169,70 @@ class Tag(PageElement):
     """A Tag represents an HTML or XML tag that is part of a parse tree."""
 
     name: str
-    attrs: Dict[str, Union[str, List[str]]]
-    contents: List[Union["Tag", NavigableString]]
-    string: Optional[NavigableString]
+    attrs: dict[str, str | list[str]]
+    contents: list[Tag | NavigableString]
+    string: NavigableString | None
 
     def __init__(
         self,
         parser: Any = None,
         builder: Any = None,
-        name: Optional[str] = None,
-        namespace: Optional[str] = None,
-        prefix: Optional[str] = None,
-        attrs: Optional[Dict[str, Any]] = None,
-        parent: Optional["Tag"] = None,
-        previous: Optional[Union["Tag", NavigableString]] = None,
-        is_xml: Optional[bool] = None,
-        sourceline: Optional[int] = None,
-        sourcepos: Optional[int] = None,
-        can_be_empty_element: Optional[bool] = None,
-        cdata_list_attributes: Optional[List[str]] = None,
-        preserve_whitespace_tags: Optional[List[str]] = None,
-        interesting_string_types: Optional[type] = None,
-        namespaces: Optional[Dict[str, str]] = None,
+        name: str | None = None,
+        namespace: str | None = None,
+        prefix: str | None = None,
+        attrs: dict[str, Any] | None = None,
+        parent: Tag | None = None,
+        previous: Tag | NavigableString | None = None,
+        is_xml: bool | None = None,
+        sourceline: int | None = None,
+        sourcepos: int | None = None,
+        can_be_empty_element: bool | None = None,
+        cdata_list_attributes: list[str] | None = None,
+        preserve_whitespace_tags: list[str] | None = None,
+        interesting_string_types: type | None = None,
+        namespaces: dict[str, str] | None = None,
     ) -> None:
         """Initialize a new Tag."""
         ...
     # Navigation methods
     def find(
         self,
-        name: Optional[
-            Union[str, List[str], re.Pattern[str], Callable[[str], bool], bool]
-        ] = None,
-        attrs: Optional[Union[Dict[str, Any], str]] = None,
+        name: str
+        | list[str]
+        | re.Pattern[str]
+        | Callable[[str], bool]
+        | bool
+        | None = None,
+        attrs: dict[str, Any] | str | None = None,
         recursive: bool = True,
-        string: Optional[Union[str, re.Pattern[str]]] = None,
+        string: str | re.Pattern[str] | None = None,
         **kwargs: Any,
-    ) -> Optional["Tag"]:
+    ) -> Tag | None:
         """Find the first matching element."""
         ...
 
     def find_all(
         self,
-        name: Optional[
-            Union[str, List[str], re.Pattern[str], Callable[[str], bool], bool]
-        ] = None,
-        attrs: Optional[Union[Dict[str, Any], str]] = None,
+        name: str
+        | list[str]
+        | re.Pattern[str]
+        | Callable[[str], bool]
+        | bool
+        | None = None,
+        attrs: dict[str, Any] | str | None = None,
         recursive: bool = True,
-        string: Optional[Union[str, re.Pattern[str]]] = None,
-        limit: Optional[int] = None,
+        string: str | re.Pattern[str] | None = None,
+        limit: int | None = None,
         **kwargs: Any,
-    ) -> "ResultSet[Tag]":
+    ) -> ResultSet[Tag]:
         """Find all matching elements."""
         ...
 
-    def select(self, selector: str) -> List["Tag"]:
+    def select(self, selector: str) -> list[Tag]:
         """Find elements using CSS selector."""
         ...
 
-    def select_one(self, selector: str) -> Optional["Tag"]:
+    def select_one(self, selector: str) -> Tag | None:
         """Find the first element using CSS selector."""
         ...
     # Content methods
@@ -234,11 +249,11 @@ class Tag(PageElement):
         """Get an attribute value."""
         ...
 
-    def __getitem__(self, key: str) -> Union[str, List[str]]:
+    def __getitem__(self, key: str) -> str | list[str]:
         """Get an attribute value using bracket notation."""
         ...
 
-    def __setitem__(self, key: str, value: Union[str, List[str]]) -> None:
+    def __setitem__(self, key: str, value: str | list[str]) -> None:
         """Set an attribute value using bracket notation."""
         ...
 
@@ -250,21 +265,19 @@ class Tag(PageElement):
         """Check if an attribute exists."""
         ...
     # Tree modification methods
-    def append(self, tag: Union["Tag", NavigableString, str]) -> None:
+    def append(self, tag: Tag | NavigableString | str) -> None:
         """Append a child element."""
         ...
 
-    def insert(
-        self, position: int, new_child: Union["Tag", NavigableString, str]
-    ) -> None:
+    def insert(self, position: int, new_child: Tag | NavigableString | str) -> None:
         """Insert a child element at the specified position."""
         ...
 
-    def insert_before(self, *args: Union["Tag", NavigableString, str]) -> None:
+    def insert_before(self, *args: Tag | NavigableString | str) -> None:
         """Insert elements before this element."""
         ...
 
-    def insert_after(self, *args: Union["Tag", NavigableString, str]) -> None:
+    def insert_after(self, *args: Tag | NavigableString | str) -> None:
         """Insert elements after this element."""
         ...
 
@@ -272,7 +285,7 @@ class Tag(PageElement):
         """Remove all children from this element."""
         ...
 
-    def extract(self) -> "Tag":
+    def extract(self) -> Tag:
         """Remove this element from the tree and return it."""
         ...
 
@@ -280,15 +293,15 @@ class Tag(PageElement):
         """Destroy this element and its children."""
         ...
 
-    def replace_with(self, *args: Union["Tag", NavigableString, str]) -> "Tag":
+    def replace_with(self, *args: Tag | NavigableString | str) -> Tag:
         """Replace this element with the given elements."""
         ...
 
-    def wrap(self, wrap_with: "Tag") -> "Tag":
+    def wrap(self, wrap_with: Tag) -> Tag:
         """Wrap this element in the given tag."""
         ...
 
-    def unwrap(self) -> Optional["Tag"]:
+    def unwrap(self) -> Tag | None:
         """Remove this element's tag and return its contents."""
         ...
     # String representation
@@ -300,15 +313,15 @@ class Tag(PageElement):
         """Return detailed string representation of this element."""
         ...
     # Iteration
-    def __iter__(self) -> Iterator[Union["Tag", NavigableString]]:
+    def __iter__(self) -> Iterator[Tag | NavigableString]:
         """Iterate over direct children."""
         ...
 
-    def children(self) -> Iterator[Union["Tag", NavigableString]]:
+    def children(self) -> Iterator[Tag | NavigableString]:
         """Iterate over direct children."""
         ...
 
-    def descendants(self) -> Iterator[Union["Tag", NavigableString]]:
+    def descendants(self) -> Iterator[Tag | NavigableString]:
         """Iterate over all descendants."""
         ...
 
@@ -323,13 +336,13 @@ class Tag(PageElement):
     def new_tag(
         self,
         name: str,
-        namespace: Optional[str] = None,
-        nsprefix: Optional[str] = None,
-        attrs: Optional[Dict[str, Any]] = None,
-        sourceline: Optional[int] = None,
-        sourcepos: Optional[int] = None,
+        namespace: str | None = None,
+        nsprefix: str | None = None,
+        attrs: dict[str, Any] | None = None,
+        sourceline: int | None = None,
+        sourcepos: int | None = None,
         **kwattrs: Any,
-    ) -> "Tag":
+    ) -> Tag:
         """Create a new tag."""
         ...
 
@@ -337,8 +350,12 @@ class Tag(PageElement):
         """Create a new NavigableString."""
         ...
 
-class ResultSet(List[Tag]):
-    """A ResultSet is just a list that keeps track of the SoupStrainer that created it."""
+class ResultSet(list[Tag]):
+    """A ResultSet is just a list that keeps track of the SoupStrainer.
+
+    This class represents a list that maintains information about the
+    SoupStrainer that created it.
+    """
 
     def __init__(self, source: Any, result: Iterable[Tag] = ()) -> None:
         """Initialize a new ResultSet."""
@@ -349,13 +366,13 @@ class BeautifulSoup(Tag):
 
     def __init__(
         self,
-        markup: Union[str, bytes] = "",
-        features: Optional[Union[str, List[str]]] = None,
+        markup: str | bytes = "",
+        features: str | list[str] | None = None,
         builder: Any = None,
         parse_only: Any = None,
-        from_encoding: Optional[str] = None,
-        exclude_encodings: Optional[List[str]] = None,
-        element_classes: Optional[Dict[type, type]] = None,
+        from_encoding: str | None = None,
+        exclude_encodings: list[str] | None = None,
+        element_classes: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a new BeautifulSoup parser."""
@@ -364,11 +381,11 @@ class BeautifulSoup(Tag):
     def new_tag(
         self,
         name: str,
-        namespace: Optional[str] = None,
-        nsprefix: Optional[str] = None,
-        attrs: Optional[Dict[str, Any]] = None,
-        sourceline: Optional[int] = None,
-        sourcepos: Optional[int] = None,
+        namespace: str | None = None,
+        nsprefix: str | None = None,
+        attrs: dict[str, Any] | None = None,
+        sourceline: int | None = None,
+        sourcepos: int | None = None,
         **kwattrs: Any,
     ) -> Tag:
         """Create a new tag."""
@@ -381,8 +398,8 @@ class BeautifulSoup(Tag):
     def encode(
         self,
         encoding: str = "utf-8",
-        indent_level: Optional[int] = None,
-        formatter: Union[str, Callable[[str], str]] = "minimal",
+        indent_level: int | None = None,
+        formatter: str | Callable[[str], str] = "minimal",
         errors: str = "xmlcharrefreplace",
     ) -> bytes:
         """Encode the document as bytes."""
@@ -390,13 +407,13 @@ class BeautifulSoup(Tag):
 
     def decode(
         self,
-        indent_level: Optional[int] = None,
+        indent_level: int | None = None,
         eventual_encoding: str = "utf-8",
-        formatter: Union[str, Callable[[str], str]] = "minimal",
+        formatter: str | Callable[[str], str] = "minimal",
     ) -> str:
         """Decode the document as a string."""
         ...
 
 # Type aliases for common usage patterns
-TagOrString = Union[Tag, NavigableString]
-TagOrElement = Union[Tag, PageElement, NavigableString]
+TagOrString = Tag | NavigableString
+TagOrElement = Tag | PageElement | NavigableString
