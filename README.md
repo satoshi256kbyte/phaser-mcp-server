@@ -33,45 +33,9 @@ AIアシスタントとの対話例：
 - "Phaser.GameObjectsクラスのAPIリファレンスを表示して"
 - "タイルマップの作成方法について詳しく教えて"
 
-## インストール
+## インストールと実行
 
-### 方法1: uvx を使用（推奨）
-
-最も簡単で推奨される方法です。
-
-#### 前提条件
-
-uvパッケージマネージャーがインストールされている必要があります：
-
-```bash
-# macOS (Homebrew)
-brew install uv
-
-# Linux/WSL
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Windows (PowerShell)
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-#### インストールと実行
-
-```bash
-# 最新版を直接実行
-uvx phaser-mcp-server@latest
-
-# 特定のバージョンを実行
-uvx phaser-mcp-server@1.0.0
-
-# バージョン確認
-uvx phaser-mcp-server@latest --version
-```
-
-### 方法2: Docker を使用
-
-コンテナ環境での実行に適しています。
-
-#### 前提条件
+### 前提条件
 
 Docker がインストールされている必要があります：
 
@@ -80,49 +44,23 @@ Docker がインストールされている必要があります：
 docker --version
 ```
 
-#### 実行方法
+### セットアップ手順
 
 ```bash
-# 基本実行
-docker run --rm -it phaser-mcp-server:latest
+# 1. リポジトリをクローン
+git clone https://github.com/satoshi256kbyte/phaser-mcp-server.git
+cd phaser-mcp-server
 
-# 環境変数を設定して実行
-docker run --rm -it \
-  -e FASTMCP_LOG_LEVEL=DEBUG \
-  -e PHASER_DOCS_TIMEOUT=60 \
-  phaser-mcp-server:latest
+# 2. Dockerイメージをビルド
+docker build -t phaser-mcp-server .
 
-# バックグラウンドで実行
-docker run -d --name phaser-mcp \
-  -e FASTMCP_LOG_LEVEL=ERROR \
-  phaser-mcp-server:latest
+# 3. 動作確認（オプション）
+docker run --rm phaser-mcp-server --version
 ```
 
-## MCP クライアント設定
+### MCP クライアント設定
 
-### Claude Desktop
-
-Claude Desktop の設定ファイルに以下を追加：
-
-#### uvx インストールの場合
-
-```json
-{
-  "mcpServers": {
-    "phaser-mcp-server": {
-      "command": "uvx",
-      "args": ["phaser-mcp-server@latest"],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
-#### Docker インストールの場合
+Amazon Q Developer の設定ファイル（`.amazonq/mcp.json`）に以下を追加：
 
 ```json
 {
@@ -135,7 +73,9 @@ Claude Desktop の設定ファイルに以下を追加：
         "--interactive",
         "--env",
         "FASTMCP_LOG_LEVEL=ERROR",
-        "phaser-mcp-server:latest"
+        "--env",
+        "PHASER_DOCS_TIMEOUT=30",
+        "phaser-mcp-server"
       ],
       "env": {},
       "disabled": false,
@@ -145,13 +85,7 @@ Claude Desktop の設定ファイルに以下を追加：
 }
 ```
 
-### 設定ファイルの場所
-
-| OS      | 設定ファイルの場所                                                |
-| ------- | ----------------------------------------------------------------- |
-| macOS   | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json`                     |
-| Linux   | `~/.config/Claude/claude_desktop_config.json`                     |
+設定完了後、Amazon Q Developerを再起動してMCPサーバーが利用可能になります。
 
 ## 利用可能なMCPツール
 
@@ -233,22 +167,22 @@ Phaserドキュメント内でコンテンツを検索します。
 
 ```bash
 # ヘルプを表示
-phaser-mcp-server --help
+docker run --rm phaser-mcp-server --help
 
 # バージョン情報を表示
-phaser-mcp-server --version
+docker run --rm phaser-mcp-server --version
 
 # サーバー情報を表示
-phaser-mcp-server --info
+docker run --rm phaser-mcp-server --info
 
 # ヘルスチェックを実行
-phaser-mcp-server --health-check
+docker run --rm phaser-mcp-server --health-check
 
 # ログレベルを設定
-phaser-mcp-server --log-level DEBUG
+docker run --rm -e FASTMCP_LOG_LEVEL=DEBUG phaser-mcp-server
 
 # タイムアウト時間を設定（秒）
-phaser-mcp-server --timeout 60
+docker run --rm -e PHASER_DOCS_TIMEOUT=60 phaser-mcp-server
 ```
 
 ## トラブルシューティング
@@ -270,59 +204,46 @@ Phaser公式ドキュメントサイト（docs.phaser.io）はCloudflareによ�
 
    ```bash
    # タイムアウト時間を延長
-   PHASER_DOCS_TIMEOUT=60 phaser-mcp-server
+   docker run --rm -e PHASER_DOCS_TIMEOUT=60 phaser-mcp-server
    
    # リトライ回数を減らす
-   PHASER_DOCS_MAX_RETRIES=1 phaser-mcp-server
+   docker run --rm -e PHASER_DOCS_MAX_RETRIES=1 phaser-mcp-server
    ```
 
 #### 接続エラー
 
 ```bash
 # ヘルスチェックを実行して接続を確認
-phaser-mcp-server --health-check
+docker run --rm phaser-mcp-server --health-check
 
 # デバッグログを有効にして詳細を確認
-phaser-mcp-server --log-level DEBUG
+# .amazonq/mcp.jsonでFASTMCP_LOG_LEVELをDEBUGに変更
 ```
 
 #### タイムアウトエラー
 
 ```bash
-# タイムアウト時間を延長
-phaser-mcp-server --timeout 60
-
-# または環境変数で設定
-PHASER_DOCS_TIMEOUT=60 phaser-mcp-server
+# .amazonq/mcp.jsonでPHASER_DOCS_TIMEOUTを60に変更
+# または一時的にテスト実行
+docker run --rm -e PHASER_DOCS_TIMEOUT=60 phaser-mcp-server --health-check
 ```
 
 ### ログの確認
 
 ```bash
-# 詳細なログを出力
-phaser-mcp-server --log-level DEBUG
-
-# エラーのみを出力
-phaser-mcp-server --log-level ERROR
-
-# 環境変数でログレベルを設定
-FASTMCP_LOG_LEVEL=DEBUG phaser-mcp-server
+# Amazon Q Developerのログを確認するか、一時的にデバッグ実行
+docker run --rm -e FASTMCP_LOG_LEVEL=DEBUG phaser-mcp-server --health-check
 ```
 
-## システム要件
+### Dockerイメージの管理
 
-### 最小要件
+```bash
+# ビルドしたイメージを確認
+docker images phaser-mcp-server
 
-- **Python**: 3.13以上（推奨: 3.14以上）
-- **メモリ**: 最小512MB、推奨1GB以上
-- **ディスク容量**: 100MB以上の空き容量
-- **ネットワーク**: インターネット接続（Phaserドキュメントアクセス用）
-
-### サポートOS
-
-- **Linux**: Ubuntu 20.04+, CentOS 8+, Debian 11+
-- **macOS**: 10.15 (Catalina) 以上
-- **Windows**: Windows 10/11 (WSL2推奨)
+# イメージを削除（再ビルドが必要な場合）
+docker rmi phaser-mcp-server
+```
 
 ## ライセンス
 
@@ -336,13 +257,12 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
 
 ### 問題報告・質問
 
-- **バグ報告**: [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
-- **機能要望**: [GitHub Issues](https://github.com/phaser-mcp-server/phaser-mcp-server/issues)
-- **質問・議論**: [GitHub Discussions](https://github.com/phaser-mcp-server/phaser-mcp-server/discussions)
+- **バグ報告**: [GitHub Issues](https://github.com/satoshi256kbyte/phaser-mcp-server/issues)
+- **機能要望**: [GitHub Issues](https://github.com/satoshi256kbyte/phaser-mcp-server/issues)
 
 ### 関連リンク
 
 - [Phaser公式サイト](https://phaser.io/)
 - [Phaser公式ドキュメント](https://docs.phaser.io/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [uvパッケージマネージャー](https://docs.astral.sh/uv/)
+- [Docker公式サイト](https://www.docker.com/)

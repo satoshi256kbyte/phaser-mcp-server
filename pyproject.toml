@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "phaser-mcp-server"
 version = "1.0.0"
-description = "MCP Server for Phaser Game Engine Documentation"
+description = "Docker-based MCP Server for Phaser Game Engine Documentation"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
@@ -59,9 +59,9 @@ dev = [
 phaser-mcp-server = "phaser_mcp_server.server:cli_main"
 
 [project.urls]
-Homepage = "https://github.com/phaser-mcp-server/phaser-mcp-server"
-Repository = "https://github.com/phaser-mcp-server/phaser-mcp-server"
-Issues = "https://github.com/phaser-mcp-server/phaser-mcp-server/issues"
+Homepage = "https://github.com/satoshi256kbyte/phaser-mcp-server"
+Repository = "https://github.com/satoshi256kbyte/phaser-mcp-server"
+Issues = "https://github.com/satoshi256kbyte/phaser-mcp-server/issues"
 Documentation = "https://docs.phaser.io/"
 
 # Hatchling build configuration

@@ -25,8 +25,9 @@ RUN apt-get update && \
     mkdir -p /app && \
     chown app:app /app
 
-# Copy the virtual environment from the builder stage
+# Copy the virtual environment and project from the builder stage
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
+COPY --from=builder --chown=app:app /app/phaser_mcp_server /app/phaser_mcp_server
 
 # Make sure we use the virtualenv
 ENV PATH="/app/.venv/bin:$PATH"

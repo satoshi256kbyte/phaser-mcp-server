@@ -9,13 +9,13 @@ Phaser MCP Serverの開発に貢献していただき、ありがとうござい
 - **Python**: 3.13以上（推奨: 3.14以上）
 - **uv**: パッケージマネージャー
 - **Git**: バージョン管理
-- **Docker**: コンテナ実行（オプション）
+- **Docker**: コンテナ実行
 
 ### 開発環境の構築
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/phaser-mcp-server/phaser-mcp-server.git
+git clone https://github.com/satoshi256kbyte/phaser-mcp-server.git
 cd phaser-mcp-server
 
 # 2. 仮想環境を作成して依存関係をインストール
@@ -33,6 +33,8 @@ uv run pre-commit install
 
 ### 実行方法
 
+#### 開発環境での実行
+
 ```bash
 # 直接実行
 uv run phaser-mcp-server
@@ -41,6 +43,16 @@ uv run phaser-mcp-server
 source .venv/bin/activate  # Linux/macOS
 # または .venv\Scripts\activate  # Windows
 phaser-mcp-server
+```
+
+#### Docker環境での実行
+
+```bash
+# Dockerイメージをビルド
+docker build -t phaser-mcp-server:dev .
+
+# 実行
+docker run --rm -it phaser-mcp-server:dev
 ```
 
 ## プロジェクト構造
@@ -248,7 +260,7 @@ docker run --rm -it \
 docker run --rm -it \
   -v $(pwd):/app \
   -w /app \
-  python:3.14-slim \
+  python:3.13-slim \
   bash
 ```
 
@@ -366,6 +378,55 @@ end_time = time.time()
 print(f"Processing time: {end_time - start_time:.2f} seconds")
 ```
 
+## MCP クライアント設定（開発・テスト用）
+
+### Amazon Q Developer設定
+
+開発中のサーバーをテストするための設定（`.amazonq/mcp.json`）：
+
+```json
+{
+  "mcpServers": {
+    "phaser-mcp-server-dev": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "--interactive",
+        "--env",
+        "FASTMCP_LOG_LEVEL=DEBUG",
+        "--env",
+        "PHASER_DOCS_TIMEOUT=60",
+        "phaser-mcp-server:dev"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+### ローカル開発用設定
+
+```json
+{
+  "mcpServers": {
+    "phaser-mcp-server-local": {
+      "command": "uv",
+      "args": ["run", "phaser-mcp-server"],
+      "cwd": "/path/to/phaser-mcp-server",
+      "env": {
+        "FASTMCP_LOG_LEVEL": "DEBUG",
+        "PHASER_DOCS_TIMEOUT": "60"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
 ## リリースプロセス
 
 ### バージョン管理
@@ -393,9 +454,10 @@ uv run phaser-mcp-server --version
    vim pyproject.toml
    ```
 
-3. **変更ログの更新**:
+3. **Dockerイメージのビルド**:
    ```bash
-   # CHANGELOGを更新（存在する場合）
+   docker build -t phaser-mcp-server:1.1.0 .
+   docker build -t phaser-mcp-server:latest .
    ```
 
 4. **コミットとタグ**:
@@ -406,10 +468,11 @@ uv run phaser-mcp-server --version
    git push origin main --tags
    ```
 
-5. **パッケージのビルドと公開**:
+5. **Dockerイメージの公開**（必要に応じて）:
    ```bash
-   uv build
-   # PyPIへの公開（権限が必要）
+   # Docker Hubまたはプライベートレジストリに公開
+   docker push your-registry/phaser-mcp-server:1.1.0
+   docker push your-registry/phaser-mcp-server:latest
    ```
 
 ## 貢献のガイドライン
@@ -444,7 +507,6 @@ uv run phaser-mcp-server --version
 
 ### 開発に関する質問
 
-- **GitHub Discussions**: 一般的な開発に関する質問
 - **GitHub Issues**: バグ報告や機能要望
 - **コードレビュー**: プルリクエストでのフィードバック
 
@@ -455,6 +517,7 @@ uv run phaser-mcp-server --version
 - [Pydanticドキュメント](https://docs.pydantic.dev/)
 - [pytestドキュメント](https://docs.pytest.org/)
 - [uvドキュメント](https://docs.astral.sh/uv/)
+- [Docker公式ドキュメント](https://docs.docker.com/)
 
 ## ライセンス
 
